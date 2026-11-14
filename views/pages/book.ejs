@@ -1,0 +1,103 @@
+<%- include('../partials/header') %>
+<% if (!book) { %>
+  <h1>Book Not Found</h1>
+  <p><a href="/books">Back to Books</a></p>
+<% } else { %>
+  <div class="book-detail">
+    <div class="book-detail-cover">
+      <% if (book.coverUrl && !book.coverUrl.includes('PASTE_')) { %>
+        <img src="<%= book.coverUrl %>" alt="<%= book.title %>" onerror="this.style.display='none'">
+      <% } else { %>
+        <div class="cover-fallback big">📖</div>
+      <% } %>
+    </div>
+    <div class="book-detail-info">
+      <h1><%= book.title %></h1>
+      <% if (book.subtitle) { %><p class="book-subtitle"><%= book.subtitle %></p><% } %>
+      <div class="meta">
+        <span><%= book.author %></span> · <span><%= book.language %></span>
+        <% if (book.publishedDate) { %> · <span><%= new Date(book.publishedDate).toLocaleDateString('en-IN') %></span><% } %>
+        <% if (book.pages) { %> · <span><%= book.pages %> pages</span><% } %>
+      </div>
+      <div class="book-cats">
+        <% (book.categories || []).forEach(c => { %><span class="tag"><%= c %></span><% }) %>
+      </div>
+      <div class="book-detail-actions">
+        <button class="btn" id="openReader">Read Online</button>
+        <% if (book.pdfUrl) { %>
+          <a class="btn btn-ghost" href="<%= book.pdfUrl %>" target="_blank" rel="noopener">Download PDF</a>
+        <% } %>
+        <% if (book.price && book.price > 0) { %>
+          <button class="btn btn-ghost" id="buyBtn" disabled>Buy Book (Coming Soon)</button>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <section class="book-section">
+    <h2>About the Book</h2>
+    <p><%= book.description || 'No description available.' %></p>
+  </section>
+
+  <% if (book.whatReadersLearn && book.whatReadersLearn.length) { %>
+    <section class="book-section">
+      <h2>What You Will Learn</h2>
+      <ul>
+        <% book.whatReadersLearn.forEach(item => { %><li><%= item %></li><% }) %>
+      </ul>
+    </section>
+  <% } %>
+
+  <% if (book.tableOfContents && book.tableOfContents.length) { %>
+    <section class="book-section">
+      <h2>Table of Contents</h2>
+      <ol class="toc">
+        <% book.tableOfContents.forEach(item => { %><li><%= item %></li><% }) %>
+      </ol>
+    </section>
+  <% } %>
+
+  <% if (book.authorIntro) { %>
+    <section class="book-section">
+      <h2>About the Author</h2>
+      <p><%= book.authorIntro %></p>
+    </section>
+  <% } %>
+
+  <p><a href="/books">← Back to Books</a></p>
+
+  <!-- PDF Reader Modal -->
+  <div class="pdf-reader-modal" id="pdfReaderModal" style="display:none">
+    <div class="pdf-reader-header">
+      <h3><%= book.title %></h3>
+      <div class="pdf-controls">
+        <button class="btn btn-sm" id="prevPage">Previous</button>
+        <span id="pageNum">Page 1 / 1</span>
+        <button class="btn btn-sm" id="nextPage">Next</button>
+        <button class="btn btn-sm" id="zoomOut">Zoom -</button>
+        <span id="zoomLevel">100%</span>
+        <button class="btn btn-sm" id="zoomIn">Zoom +</button>
+        <button class="btn btn-sm" id="fullscreenBtn">Fullscreen</button>
+        <button class="btn btn-sm" id="closeReader">Close</button>
+      </div>
+    </div>
+    <div class="pdf-reader-body">
+      <canvas id="pdfCanvas"></canvas>
+    </div>
+    <div class="pdf-reader-footer">
+      <a class="btn btn-sm" href="<%= book.pdfUrl %>" target="_blank" rel="noopener">Download PDF</a>
+    </div>
+  </div>
+
+  <script src="/js/pdf-reader.js"></script>
+  <script>
+    document.getElementById('openReader').addEventListener('click', function() {
+      document.getElementById('pdfReaderModal').style.display = 'flex';
+      if (window.pdfReader) window.pdfReader.init('<%= book.pdfUrl %>');
+    });
+    document.getElementById('closeReader').addEventListener('click', function() {
+      document.getElementById('pdfReaderModal').style.display = 'none';
+    });
+  </script>
+<% } %>
+<%- include('../partials/footer') %>

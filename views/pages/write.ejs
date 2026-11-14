@@ -1,0 +1,409 @@
+
+<%- include('../partials/header') %>
+
+<style>
+.write-page {
+  max-width: 1100px;
+  margin: 35px auto;
+  padding: 20px;
+  color: #f5f5f5;
+}
+
+.write-heading {
+  margin-bottom: 25px;
+}
+
+.write-heading h1 {
+  margin-bottom: 8px;
+}
+
+.write-heading p {
+  color: #bbb;
+}
+
+.write-layout {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.write-card,
+.preview-card {
+  background: #fff;
+  color: #222;
+  padding: 25px;
+  border-radius: 14px;
+}
+
+.write-form label {
+  display: block;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.write-form input,
+.write-form textarea,
+.write-form select {
+  width: 100%;
+  padding: 12px;
+  margin-top: 7px;
+  border: 1px solid #ccc;
+  border-radius: 7px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.write-form textarea {
+  min-height: 230px;
+  resize: vertical;
+  line-height: 1.8;
+}
+
+.write-form input[type="file"] {
+  padding: 10px;
+  background: #fafafa;
+}
+
+.write-form input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}
+
+.write-form small {
+  display: block;
+  color: #666;
+  font-weight: 400;
+  margin-top: 5px;
+}
+
+.write-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.write-counts {
+  display: flex;
+  gap: 20px;
+  color: #666;
+  font-size: 13px;
+  margin: -5px 0 20px;
+}
+
+.write-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.write-actions button {
+  border: 0;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.write-secondary {
+  background: #333 !important;
+  color: #fff !important;
+}
+
+.write-preview {
+  min-height: 250px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.9;
+  color: #333;
+}
+
+.write-preview h3 {
+  margin-top: 0;
+  color: #222;
+}
+
+.write-preview .preview-body {
+  white-space: pre-wrap;
+}
+
+.write-preview-empty {
+  color: #888;
+}
+
+.write-section-title {
+  margin: 25px 0 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.write-errors {
+  background: #ffe3e3;
+  color: #a00000;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.existing-file {
+  padding: 12px;
+  margin: 10px 0;
+  background: #f2f2f2;
+  border-radius: 8px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.existing-file a {
+  color: #0756a5;
+}
+
+@media(max-width: 800px) {
+  .write-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media(max-width: 550px) {
+  .write-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .write-card,
+  .preview-card {
+    padding: 16px;
+  }
+}
+</style>
+
+<main class="write-page">
+
+  <div class="write-heading">
+    <h1><%= isEdit ? 'Edit Your Poem' : 'Writing Studio' %></h1>
+    <p>Create your poem and optionally attach a cover image or PDF document.</p>
+  </div>
+
+  <% if (errors && errors.length) { %>
+    <div class="write-errors">
+      <% errors.forEach(error => { %>
+        <p><%= error.msg %></p>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <div class="write-layout">
+
+    <section class="write-card">
+
+      <form
+        class="write-form"
+        id="writeForm"
+        action="<%= formAction %>"
+        method="POST"
+        enctype="multipart/form-data"
+      >
+
+        <label>
+          Poem Title *
+          <input
+            type="text"
+            name="title"
+            id="title"
+            maxlength="200"
+            value="<%= poem ? poem.title : '' %>"
+            placeholder="Enter your poem title"
+            required
+          >
+        </label>
+
+        <label>
+          Poem Content *
+          <textarea
+            name="body"
+            id="content"
+            placeholder="Start writing your poem here..."
+            required
+          ><%= poem ? poem.body : '' %></textarea>
+        </label>
+
+        <div class="write-counts">
+          <span><strong id="words">0</strong> Words</span>
+          <span><strong id="chars">0</strong> Characters</span>
+        </div>
+
+        <div class="write-row">
+
+          <label>
+            Category *
+            <select name="category" required>
+              <% (categories || []).forEach(category => { %>
+                <option
+                  value="<%= category %>"
+                  <%= poem && poem.category === category ? 'selected' : '' %>
+                ><%= category %></option>
+              <% }) %>
+            </select>
+          </label>
+
+          <label>
+            Language *
+            <select name="language" id="language" required>
+              <% (languages || []).forEach(language => { %>
+                <option
+                  value="<%= language %>"
+                  <%= poem && poem.language === language ? 'selected' : '' %>
+                ><%= language %></option>
+              <% }) %>
+            </select>
+          </label>
+
+        </div>
+
+        <div class="write-row">
+
+          <label>
+            Mood
+            <input
+              type="text"
+              name="mood"
+              maxlength="50"
+              value="<%= poem ? poem.mood || '' : '' %>"
+              placeholder="Romantic, Sad, Motivational..."
+            >
+          </label>
+
+          <label>
+            Author
+            <input
+              type="text"
+              name="author"
+              maxlength="100"
+              value="<%= poem ? poem.author || user.name : user.name %>"
+              placeholder="Author name"
+            >
+          </label>
+
+        </div>
+
+        <label>
+          Tags
+          <input
+            type="text"
+            name="tags"
+            value="<%= poem && poem.tags ? poem.tags.join(', ') : '' %>"
+            placeholder="Love, Life, Motivation"
+          >
+          <small>Separate multiple tags with commas.</small>
+        </label>
+
+        <h3 class="write-section-title">Optional Attachments</h3>
+
+        <label>
+          Cover Image
+          <input
+            type="file"
+            name="coverImage"
+            id="coverImage"
+            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+          >
+          <small>JPG, JPEG, PNG or WEBP. Maximum 10 MB.</small>
+        </label>
+
+        <% if (isEdit && poem && poem.imageMimeType) { %>
+          <div class="existing-file">
+            Existing cover:
+            <a href="/writer/<%= poem._id %>/attachment/image" target="_blank">View Image</a>
+            <label>
+              <input type="checkbox" name="removeImage">
+              Remove existing image
+            </label>
+          </div>
+        <% } %>
+
+        <label>
+          Poem PDF Document
+          <input
+            type="file"
+            name="poemPdf"
+            id="poemPdf"
+            accept=".pdf,application/pdf"
+          >
+          <small>PDF only. Maximum 10 MB.</small>
+        </label>
+
+        <% if (isEdit && poem && poem.documentUrl) { %>
+          <div class="existing-file">
+            Existing document:
+            <a href="/writer/<%= poem._id %>/attachment/pdf">Download PDF</a>
+            <label>
+              <input type="checkbox" name="removePdf">
+              Remove existing PDF
+            </label>
+          </div>
+        <% } %>
+
+        <label>
+          <input
+            type="checkbox"
+            id="rtl"
+            <%= poem && poem.language === 'Urdu' ? 'checked' : '' %>
+          >
+          Enable Right-to-Left Preview (Urdu)
+        </label>
+
+        <div class="write-actions">
+
+          <button
+            type="submit"
+            name="status"
+            value="draft"
+            class="btn write-secondary"
+          >
+            Save as Draft
+          </button>
+
+          <button
+            type="submit"
+            name="status"
+            value="pending"
+            class="btn"
+          >
+            Submit for Review
+          </button>
+
+          <button
+            type="button"
+            id="previewBtn"
+            class="btn write-secondary"
+          >
+            Preview Poem
+          </button>
+
+        </div>
+
+      </form>
+
+    </section>
+
+    <aside class="preview-card">
+
+      <h2>Live Preview</h2>
+
+      <div class="write-preview" id="preview" dir="ltr">
+        <h3 id="previewTitle">Your poem title will appear here</h3>
+        <div class="preview-body" id="previewBody">
+          <span class="write-preview-empty">Your poem content will appear here.</span>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+
+</main>
+
+<script src="/js/editor.js"></script>
+
+<%- include('../partials/footer') %>

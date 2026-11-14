@@ -1,0 +1,259 @@
+
+<%- include('../partials/header') %>
+
+<style>
+.poetry-hero {
+  position: relative;
+  min-height: 230px;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.poetry-hero .banner-img {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+}
+
+.hero-text {
+  padding: 25px;
+}
+
+/* Poetry Grid */
+
+.poem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 340px));
+  justify-content: start;
+  gap: 24px;
+  margin: 30px 0;
+}
+
+/* Poetry Card */
+
+.poem-card {
+  width: 100%;
+  min-width: 0;
+  background: #fff;
+  color: #222;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(0,0,0,.10);
+  display: flex;
+  flex-direction: column;
+}
+
+.poem-card-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  object-fit: cover;
+  background: #eee;
+}
+
+.poem-card-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.poem-card h3 {
+  margin: 0 0 12px;
+  font-size: 21px;
+  overflow-wrap: anywhere;
+}
+
+.poem-card a {
+  color: inherit;
+}
+
+.poem-card h3 a {
+  text-decoration: none;
+}
+
+.poem-card h3 a:hover {
+  color: #7544a1;
+}
+
+.poem-card .excerpt {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  margin: 0 0 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  display: -webkit-box;
+-webkit-line-clamp: 3;
+line-clamp: 3;
+-webkit-box-orient: vertical;
+overflow: hidden;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 5.1em;
+}
+
+.poem-card .meta {
+  color: #666;
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 12px 0 18px;
+}
+
+.poem-card-content > .btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.search-bar {
+  display: flex;
+  gap: 10px;
+  margin: 25px 0;
+}
+
+.search-bar input {
+  flex: 1;
+  min-width: 0;
+}
+
+.empty {
+  color: #aaa;
+  padding: 20px 0;
+}
+
+/* Responsive */
+
+@media (max-width: 800px) {
+  .poem-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .poem-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .poetry-hero .banner-img {
+    height: 190px;
+  }
+}
+</style>
+
+<section class="poetry-hero">
+  <% if (bannerUrl && !bannerUrl.includes('PASTE_')) { %>
+    <img src="<%= bannerUrl %>" alt="Poetry banner" class="banner-img">
+  <% } else { %>
+    <div class="banner-fallback"></div>
+  <% } %>
+
+  <div class="hero-text">
+    <h1>Poetry That Speaks to the Soul</h1>
+    <p>Curated verses across Hindi, Urdu, English, and Bhojpuri.</p>
+  </div>
+</section>
+
+<form class="search-bar" action="/poems" method="get">
+  <% if (typeof category !== 'undefined' && category) { %>
+    <input type="hidden" name="category" value="<%= category %>">
+  <% } %>
+
+  <% if (typeof language !== 'undefined' && language) { %>
+    <input type="hidden" name="language" value="<%= language %>">
+  <% } %>
+
+  <input
+    type="search"
+    name="q"
+    value="<%= query %>"
+    placeholder="Search title or content..."
+    aria-label="Search">
+
+  <button class="btn" type="submit">Search</button>
+</form>
+
+<% if (!dbAvailable) { %>
+  <p class="empty">Database not configured. Showing sample content only.</p>
+<% } %>
+
+<% if (errors && errors.length) { %>
+  <div class="errors">
+    <% errors.forEach(error => { %>
+      <p><%= error.msg %></p>
+    <% }) %>
+  </div>
+<% } %>
+
+<% if (!poems.length) { %>
+
+  <p class="empty">No results found. Try a different search.</p>
+
+<% } else { %>
+
+  <div class="poem-grid">
+
+    <% poems.forEach(p => { %>
+
+      <article class="poem-card"
+        dir="<%= p.language === 'Urdu' ? 'rtl' : 'ltr' %>">
+
+        <% if (p.imageMimeType) { %>
+
+          <img
+            src="/poems/<%= encodeURIComponent(p.slug) %>/attachment/image"
+            alt="<%= p.title %>"
+            class="poem-card-cover">
+
+        <% } else if (p.imageUrl && /^https?:\/\//i.test(p.imageUrl)) { %>
+
+          <img
+            src="<%= p.imageUrl %>"
+            alt="<%= p.title %>"
+            class="poem-card-cover"
+            onerror="this.style.display='none'">
+
+        <% } %>
+
+        <div class="poem-card-content">
+
+          <h3>
+            <a href="/poems/<%= encodeURIComponent(p.slug) %>">
+              <%= p.title %>
+            </a>
+          </h3>
+
+          <p class="excerpt">
+            <%= (p.body || p.excerpt || '').trim() %>
+          </p>
+
+          <div class="meta">
+            <span><%= p.author %></span>
+            ·
+            <span>
+              <%= p.createdAt ? new Date(p.createdAt).toDateString() : p.date %>
+            </span>
+            ·
+            <span><%= p.category %></span>
+            ·
+            <span><%= p.language %></span>
+          </div>
+
+          <a class="btn btn-ghost"
+             href="/poems/<%= encodeURIComponent(p.slug) %>">
+            Read More
+          </a>
+
+        </div>
+      </article>
+
+    <% }) %>
+
+  </div>
+
+<% } %>
+
+<%- include('../partials/footer') %>

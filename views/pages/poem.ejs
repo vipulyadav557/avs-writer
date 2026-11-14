@@ -1,0 +1,141 @@
+
+<%- include('../partials/header') %>
+
+<style>
+.poem-detail {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 25px;
+  color: #222;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 5px 25px rgba(0,0,0,.12);
+}
+
+.poem-cover {
+  width: 100%;
+  max-height: 450px;
+  object-fit: contain;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  background: #f5f5f5;
+}
+
+.poem-detail h1 {
+  font-size: 2rem;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+
+.poem-meta {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.8;
+}
+
+.poem-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.poem-tag {
+  background: #eee;
+  color: #333;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.poem-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  font-size: 17px;
+  line-height: 2;
+  color: #222;
+  margin: 25px 0;
+}
+
+.poem-attachment {
+  display: inline-block;
+  margin: 10px 10px 10px 0;
+}
+
+.poem-back {
+  display: inline-block;
+  margin-top: 25px;
+}
+</style>
+
+<article class="poem-detail"
+  dir="<%= poem && poem.language === 'Urdu' ? 'rtl' : 'ltr' %>">
+
+  <% if (poem) { %>
+
+    <% if (poem.imageMimeType) { %>
+      <img
+        src="/poems/<%= encodeURIComponent(poem.slug) %>/attachment/image"
+        alt="<%= poem.title %>"
+        class="poem-cover">
+    <% } else if (poem.imageUrl && !poem.imageUrl.includes('PASTE_')) { %>
+      <img
+        src="<%= poem.imageUrl %>"
+        alt="<%= poem.title %>"
+        class="poem-cover"
+        onerror="this.style.display='none'">
+    <% } %>
+
+    <h1><%= poem.title %></h1>
+
+    <div class="poem-meta">
+      <strong>Author:</strong> <%= poem.author || 'Anonymous' %>
+      · <strong>Date:</strong>
+      <%= poem.createdAt ? new Date(poem.createdAt).toDateString() : '' %>
+      · <strong>Category:</strong> <%= poem.category %>
+      · <strong>Language:</strong> <%= poem.language %>
+
+      <% if (poem.mood) { %>
+        · <strong>Mood:</strong> <%= poem.mood %>
+      <% } %>
+    </div>
+
+    <% if (poem.tags && poem.tags.length) { %>
+      <div class="poem-tags">
+        <% poem.tags.forEach(tag => { %>
+          <span class="poem-tag"><%= tag %></span>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <pre class="poem-content"><%= poem.body %></pre>
+
+    <% if (poem.documentMimeType) { %>
+      <div class="poem-attachment">
+        <a
+          class="btn"
+          href="/poems/<%= encodeURIComponent(poem.slug) %>/attachment/pdf">
+          Download Poem PDF
+        </a>
+      </div>
+    <% } %>
+
+    <button
+      type="button"
+      class="btn btn-ghost"
+      onclick="navigator.clipboard.writeText(document.querySelector('.poem-content').innerText)">
+      Copy Poem
+    </button>
+
+  <% } else { %>
+    <p class="empty">Poem not found.</p>
+  <% } %>
+
+  <div class="poem-back">
+    <a href="/poems">← Back to Poetry Library</a>
+  </div>
+
+</article>
+
+<%- include('../partials/footer') %>

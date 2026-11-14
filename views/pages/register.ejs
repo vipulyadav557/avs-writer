@@ -1,0 +1,148 @@
+
+<%- include('../partials/header') %>
+
+<style>
+.register-container {
+  max-width: 480px;
+  margin: 55px auto;
+  padding: 30px;
+  border: 1px solid var(--border-color, #444);
+  border-radius: 14px;
+  background: var(--card-bg, #fff);
+  color: var(--text-color, #222);
+}
+
+.register-container h1 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.register-subtitle {
+  text-align: center;
+  margin-bottom: 25px;
+  opacity: 0.75;
+}
+
+.register-form label {
+  display: block;
+  margin: 15px 0 7px;
+  font-weight: 600;
+}
+
+.register-form input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #999;
+  border-radius: 7px;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.register-form input:focus {
+  outline: 2px solid #777;
+}
+
+.register-form button {
+  width: 100%;
+  margin-top: 22px;
+}
+
+.register-errors {
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 7px;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: 22px;
+}
+
+.register-footer a {
+  font-weight: 600;
+}
+</style>
+
+<div class="register-container">
+
+  <h1>Create Account</h1>
+
+  <p class="register-subtitle">
+    Join AVS Writer and share your creativity.
+  </p>
+
+  <% if (errors && errors.length) { %>
+    <div class="register-errors">
+      <% errors.forEach(error => { %>
+        <p><%= error.msg %></p>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <form
+    class="register-form"
+    method="POST"
+    action="/auth/register"
+  >
+
+    <label for="name">Full Name</label>
+    <input
+      type="text"
+      id="name"
+      name="name"
+      maxlength="100"
+      placeholder="Enter your full name"
+      autocomplete="name"
+      required
+    >
+
+    <label for="email">Email Address</label>
+    <input
+      type="email"
+      id="email"
+      name="email"
+      placeholder="Enter your email"
+      autocomplete="email"
+      required
+    >
+
+    <label for="password">Password</label>
+    <input
+      type="password"
+      id="password"
+      name="password"
+      minlength="8"
+      maxlength="72"
+      placeholder="Minimum 8 characters"
+      autocomplete="new-password"
+      required
+    >
+
+    <label for="confirmPassword">Confirm Password</label>
+    <input
+      type="password"
+      id="confirmPassword"
+      name="confirmPassword"
+      minlength="8"
+      maxlength="72"
+      placeholder="Enter password again"
+      autocomplete="new-password"
+      required
+    >
+
+    <button class="btn" type="submit">
+      Create Account
+    </button>
+
+  </form>
+
+  <div class="register-footer">
+    Already have an account?
+    <a href="/auth/login">Sign In</a>
+  </div>
+
+</div>
+
+<%- include('../partials/footer') %>

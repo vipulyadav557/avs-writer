@@ -1,0 +1,224 @@
+
+<%- include('../partials/header') %>
+
+<style>
+.author-page {
+    max-width: 1150px;
+    margin: 40px auto;
+    padding: 20px;
+    color: #f5f5f5;
+}
+
+.author-profile {
+    background: #171717;
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 35px;
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.author-avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: #343434;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    font-size: 42px;
+    font-weight: bold;
+    color: #fff;
+    overflow: hidden;
+}
+
+.author-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.author-profile h1 {
+    margin: 10px 0;
+    font-size: 30px;
+}
+
+.author-bio {
+    max-width: 650px;
+    margin: 12px auto 0;
+    color: #bbb;
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+.author-section-title {
+    margin-bottom: 22px;
+    font-size: 25px;
+}
+
+.author-poems {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+}
+
+.author-poem-card {
+    background: #171717;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 22px;
+    transition: transform .2s, border-color .2s;
+}
+
+.author-poem-card:hover {
+    transform: translateY(-4px);
+    border-color: #888;
+}
+
+.author-poem-card h3 {
+    margin: 0 0 12px;
+}
+
+.author-poem-card h3 a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.author-poem-card p {
+    color: #bbb;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.author-poem-meta {
+    color: #999;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.author-read-more {
+    display: inline-block;
+    margin-top: 10px;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.author-empty {
+    padding: 35px;
+    text-align: center;
+    background: #171717;
+    border: 1px solid #333;
+    border-radius: 12px;
+    color: #aaa;
+}
+
+@media (max-width: 800px) {
+    .author-poems {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 550px) {
+    .author-page {
+        padding: 12px;
+    }
+
+    .author-profile {
+        padding: 25px 15px;
+    }
+
+    .author-poems {
+        grid-template-columns: 1fr;
+    }
+
+    .author-profile h1 {
+        font-size: 25px;
+    }
+}
+</style>
+
+<main class="author-page">
+
+    <section class="author-profile">
+
+        <div class="author-avatar">
+            <% if (author.profile_photo) { %>
+                <img
+                    src="/author/photo/<%= encodeURIComponent(author.profile_photo) %>"
+                    alt="<%= author.name %>"
+                >
+            <% } else { %>
+                <%= author.name.charAt(0).toUpperCase() %>
+            <% } %>
+        </div>
+
+        <h1><%= author.name %></h1>
+
+        <p>Writer at AVS Writer</p>
+
+        <% if (author.bio) { %>
+            <div class="author-bio"><%= author.bio %></div>
+        <% } else { %>
+            <div class="author-bio">This writer hasn't added a bio yet.</div>
+        <% } %>
+
+    </section>
+
+    <section>
+        <h2 class="author-section-title">
+            Published Poetry (<%= poems.length %>)
+        </h2>
+
+        <% if (poems.length > 0) { %>
+
+            <div class="author-poems">
+
+                <% poems.forEach(poem => { %>
+
+                    <article class="author-poem-card">
+
+                        <div class="author-poem-meta">
+                            <%= poem.category %> · <%= poem.language %>
+                        </div>
+
+                        <h3>
+                            <a href="/poems/<%= poem.slug %>">
+                                <%= poem.title %>
+                            </a>
+                        </h3>
+
+                        <p>
+                            <%= poem.body.length > 180
+                                ? poem.body.substring(0, 180) + '...'
+                                : poem.body %>
+                        </p>
+
+                        <a
+                            class="author-read-more"
+                            href="/poems/<%= poem.slug %>"
+                        >
+                            Read More →
+                        </a>
+
+                    </article>
+
+                <% }) %>
+
+            </div>
+
+        <% } else { %>
+
+            <div class="author-empty">
+                <h3>No published poems yet.</h3>
+                <p>This writer hasn't published any poetry.</p>
+            </div>
+
+        <% } %>
+
+    </section>
+
+</main>
+
+<%- include('../partials/footer') %>

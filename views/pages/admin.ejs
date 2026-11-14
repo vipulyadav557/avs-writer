@@ -1,0 +1,514 @@
+
+<%- include('../partials/header') %>
+
+<style>
+.admin-page {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 20px;
+  color: #222;
+}
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+.admin-header h1 { margin: 0; }
+.admin-user {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 18px;
+  margin-bottom: 35px;
+}
+.stat-card, .admin-section {
+  padding: 22px;
+  border: 1px solid #bbb;
+  border-radius: 12px;
+  background: #e6d4d4;
+  color: #222;
+}
+.stat-card h3 {
+  font-size: 28px;
+  margin: 0 0 8px;
+  color: #222;
+}
+.stat-card p { margin: 0; }
+.admin-section { margin: 30px 0; }
+.admin-section h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+.admin-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.admin-form .full-width { grid-column: 1 / -1; }
+.admin-form label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 600;
+  color: #222;
+}
+.admin-form input,
+.admin-form textarea,
+.admin-form select {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #999;
+  border-radius: 7px;
+  font: inherit;
+  box-sizing: border-box;
+  background: #fff;
+  color: #222;
+}
+.admin-form textarea { resize: vertical; }
+.admin-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 750px;
+  color: #222;
+}
+.admin-table th,
+.admin-table td {
+  padding: 12px;
+  border-bottom: 1px solid #bbb;
+  text-align: left;
+  vertical-align: middle;
+}
+.admin-table th {
+  font-weight: 700;
+  background: #eee;
+  color: #111;
+}
+.admin-table td { color: #333; }
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+.admin-actions form { margin: 0; }
+.admin-actions .btn { white-space: nowrap; }
+.admin-status {
+  display: inline-block;
+  padding: 5px 9px;
+  margin: 2px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #222;
+  background: #eee;
+}
+.status-pending { background: #ffe5a3; }
+.status-published { background: #b8edc5; }
+.status-rejected { background: #f4c1c1; }
+.status-draft { background: #ddd; }
+.status-featured {
+  background: #f7d889;
+  color: #5b4100;
+}
+.admin-divider {
+  margin: 25px 0;
+  border: 0;
+  border-top: 1px solid #bbb;
+}
+.attachment-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.attachment-links a { font-size: 13px; }
+@media (max-width: 650px) {
+  .admin-page { padding: 12px; }
+  .admin-section { padding: 15px; }
+  .admin-form { grid-template-columns: 1fr; }
+  .admin-form .full-width { grid-column: auto; }
+}
+</style>
+
+<div class="admin-page">
+  <div class="admin-header">
+    <h1>Admin Dashboard</h1>
+    <div class="admin-user">
+      <span><%= user.name %></span>
+      <a class="btn btn-ghost btn-sm" href="/auth/logout">Logout</a>
+    </div>
+  </div>
+
+  <% if (!dbAvailable) { %>
+    <p class="empty">
+      Database not configured. Content management is unavailable.
+    </p>
+  <% } else { %>
+
+    <!-- Statistics -->
+    <div class="admin-stats">
+      <div class="stat-card">
+        <h3><%= stats.poems %></h3>
+        <p>Total Poems</p>
+      </div>
+      <div class="stat-card">
+        <h3><%= stats.pending || 0 %></h3>
+        <p>Pending Approval</p>
+      </div>
+      <div class="stat-card">
+        <h3><%= stats.books %></h3>
+        <p>Total Books</p>
+      </div>
+      <div class="stat-card">
+        <h3><%= stats.contacts %></h3>
+        <p>Messages</p>
+      </div>
+      <div class="stat-card">
+        <h3><%= stats.users %></h3>
+        <p>Registered Users</p>
+      </div>
+    </div>
+
+    <!-- Add New Poem -->
+    <section class="admin-section">
+      <h2>Add New Poem</h2>
+      <form method="POST"
+            action="/admin/poems/add"
+            class="admin-form">
+        <div>
+          <label for="poem-title">Poem Title *</label>
+          <input type="text" id="poem-title" name="title"
+                 maxlength="200" required>
+        </div>
+
+        <div>
+          <label for="poem-author">Author Name</label>
+          <input type="text" id="poem-author" name="author"
+                 maxlength="100" placeholder="Writer name">
+        </div>
+
+        <div class="full-width">
+          <label for="poem-body">Poem Content *</label>
+          <textarea id="poem-body" name="body"
+                    rows="9" required></textarea>
+        </div>
+
+        <div>
+          <label for="poem-category">Category *</label>
+          <select id="poem-category" name="category" required>
+            <option value="">Select Category</option>
+            <option value="Shayari">Shayari</option>
+            <option value="Ghazal">Ghazal</option>
+            <option value="Nazm">Nazm</option>
+            <option value="Kavita">Kavita</option>
+            <option value="Bhojpuri Song">Bhojpuri Song</option>
+            <option value="Kahani">Kahani</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="poem-language">Language *</label>
+          <select id="poem-language" name="language" required>
+            <option value="">Select Language</option>
+            <option value="Hindi">Hindi</option>
+            <option value="Urdu">Urdu</option>
+            <option value="English">English</option>
+            <option value="Bhojpuri">Bhojpuri</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="poem-mood">Mood</label>
+          <input type="text" id="poem-mood" name="mood"
+                 maxlength="50" placeholder="Love, Sad, Motivation...">
+        </div>
+
+        <div>
+          <label for="poem-tags">Tags</label>
+          <input type="text" id="poem-tags" name="tags"
+                 placeholder="Love, Life, Friendship">
+        </div>
+
+        <div class="full-width">
+          <label for="poem-image">Image URL (Optional)</label>
+          <input type="url" id="poem-image" name="imageUrl"
+                 placeholder="https://example.com/image.jpg">
+        </div>
+
+        <div>
+          <label for="poem-status">Publishing Status</label>
+          <select id="poem-status" name="status">
+            <option value="draft">Save as Draft</option>
+            <option value="published">Publish Now</option>
+          </select>
+        </div>
+
+        <div class="full-width">
+          <button class="btn" type="submit">Add Poem</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Poem Management -->
+    <section class="admin-section">
+      <h2>Poem Management (<%= stats.poems %>)</h2>
+
+      <% if (!poems.length) { %>
+        <p class="empty">No poems available yet.</p>
+      <% } else { %>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Author</th>
+                <th>Attachments</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <% poems.forEach(p => { %>
+                <tr>
+                  <td><%= p.title %></td>
+                  <td><%= p.category %></td>
+                  <td><%= p.author || 'AVS Writer' %></td>
+
+                  <td>
+                    <div class="attachment-links">
+                      <% if (p.imageMimeType) { %>
+                        <a href="/admin/poems/<%= p.poemId %>/attachment/image"
+                           target="_blank">View Image</a>
+                      <% } %>
+
+                      <% if (p.documentMimeType) { %>
+                        <a href="/admin/poems/<%= p.poemId %>/attachment/pdf">
+                          Download PDF
+                        </a>
+                      <% } %>
+
+                      <% if (!p.imageMimeType && !p.documentMimeType) { %>
+                        -
+                      <% } %>
+                    </div>
+                  </td>
+
+                  <td>
+                    <span class="admin-status status-<%= p.status %>">
+                      <%= p.status %>
+                    </span>
+
+                    <% if (p.isFeatured) { %>
+                      <span class="admin-status status-featured">
+                        Featured
+                      </span>
+                    <% } %>
+                  </td>
+
+                  <td>
+                    <%= p.createdAt
+                      ? new Date(p.createdAt).toLocaleDateString()
+                      : '-' %>
+                  </td>
+
+                  <td>
+                    <div class="admin-actions">
+
+                      <% if (p.status === 'published') { %>
+                        <a class="btn btn-sm"
+                           href="/poems/<%= p.slug %>"
+                           target="_blank">View</a>
+
+                        <form method="POST"
+                              action="/admin/poems/<%= p.poemId %>/featured">
+                          <input type="hidden" name="featured"
+                                 value="<%= p.isFeatured ? 'false' : 'true' %>">
+                          <button class="btn btn-sm" type="submit">
+                            <%= p.isFeatured ? 'Remove Featured' : 'Make Featured' %>
+                          </button>
+                        </form>
+
+                        <form method="POST"
+                              action="/admin/poems/<%= p.poemId %>/status">
+                          <input type="hidden" name="status" value="draft">
+                          <button class="btn btn-sm" type="submit">
+                            Unpublish
+                          </button>
+                        </form>
+                      <% } else { %>
+                        <form method="POST"
+                              action="/admin/poems/<%= p.poemId %>/status">
+                          <input type="hidden" name="status" value="published">
+                          <button class="btn btn-sm" type="submit">
+                            <%= p.status === 'pending' ? 'Approve & Publish' : 'Publish' %>
+                          </button>
+                        </form>
+                      <% } %>
+
+                      <% if (p.status !== 'rejected') { %>
+                        <form method="POST"
+                              action="/admin/poems/<%= p.poemId %>/status">
+                          <input type="hidden" name="status" value="rejected">
+                          <button class="btn btn-sm" type="submit">
+                            Reject
+                          </button>
+                        </form>
+                      <% } %>
+
+                      <% if (p.status === 'rejected') { %>
+                        <form method="POST"
+                              action="/admin/poems/<%= p.poemId %>/status">
+                          <input type="hidden" name="status" value="draft">
+                          <button class="btn btn-sm" type="submit">
+                            Move to Draft
+                          </button>
+                        </form>
+                      <% } %>
+
+                      <form method="POST"
+                            action="/admin/poems/<%= p.poemId %>/delete"
+                            onsubmit="return confirm('Delete this poem permanently?');">
+                        <button class="btn btn-sm" type="submit">Delete</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+
+    <!-- Books Management -->
+    <section class="admin-section">
+      <h2>Books (<%= stats.books %>)</h2>
+
+      <% if (!books.length) { %>
+        <p class="empty">No books available yet.</p>
+      <% } else { %>
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Language</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% books.forEach(b => { %>
+                <tr>
+                  <td><%= b.title %></td>
+                  <td><%= b.language %></td>
+                  <td><%= b.status %></td>
+                  <td>
+                    <a class="btn btn-sm"
+                       href="/books/<%= b.slug %>"
+                       target="_blank">View</a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+
+    <!-- Contact Messages -->
+    <section class="admin-section">
+      <h2>Recent Contact Messages (<%= stats.contacts %>)</h2>
+
+      <% if (!contacts.length) { %>
+        <p class="empty">No messages yet.</p>
+      <% } else { %>
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Subject</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <% contacts.forEach(c => { %>
+                <tr>
+                  <td><%= c.name %></td>
+                  <td><%= c.email %></td>
+                  <td><%= c.subject || '-' %></td>
+
+                  <td>
+                    <%= c.createdAt
+                      ? new Date(c.createdAt).toLocaleDateString()
+                      : '-' %>
+                  </td>
+
+                  <td>
+                    <span class="admin-status">
+                      <%= c.isRead ? 'Read' : 'New' %>
+                    </span>
+                    <br>
+                    <span class="admin-status">
+                      <%= c.replied ? 'Replied' : 'Not Replied' %>
+                    </span>
+                  </td>
+
+                  <td>
+                    <div class="admin-actions">
+                      <% if (!c.isRead) { %>
+                        <form method="POST"
+                              action="/admin/contacts/<%= c.messageId %>/read">
+                          <button class="btn btn-sm" type="submit">
+                            Mark Read
+                          </button>
+                        </form>
+                      <% } %>
+
+                      <% if (!c.replied) { %>
+                        <form method="POST"
+                              action="/admin/contacts/<%= c.messageId %>/replied">
+                          <button class="btn btn-sm" type="submit">
+                            Mark Replied
+                          </button>
+                        </form>
+                      <% } %>
+
+                      <form method="POST"
+                            action="/admin/contacts/<%= c.messageId %>/delete"
+                            onsubmit="return confirm('Delete this message?');">
+                        <button class="btn btn-sm" type="submit">
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

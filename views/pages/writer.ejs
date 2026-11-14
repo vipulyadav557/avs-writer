@@ -1,0 +1,36 @@
+<%- include('../partials/header') %>
+<section class="writer-profile">
+  <div class="writer-photo">
+    <% if (writer.photoUrl && !writer.photoUrl.includes('PASTE_')) { %>
+      <img src="/website/public/images/writer profile.jfif" alt="<%= writer.name %>" onerror="this.style.display='none'">
+    <% } else { %>
+      <div class="photo-fallback"></div>
+    <% } %>
+  </div>
+  <div class="writer-info">
+    <h1><%= writer.name %></h1>
+    <p><%= writer.shortBio %></p>
+  </div>
+</section>
+<section>
+  <h2>About</h2>
+  <p> vky </p>
+</section>
+<section>
+  <h2>Writing Interests</h2>
+  <div class="tags"><% writer.interests.forEach(i=>{ %><span class="tag"><%= i %></span><% }) %></div>
+</section>
+<section>
+  <h2>Literary Themes</h2>
+  <div class="tags"><% writer.themes.forEach(t=>{ %><span class="tag"><%= t %></span><% }) %></div>
+</section>
+<section>
+  <h2>Social Links</h2>
+  <div class="socials">
+    <% if (writer.social.instagram) { %><a href="<%= writer.social.instagram %>">Instagram</a><% } %>
+    <% if (writer.social.facebook) { %><a href="<%= writer.social.facebook %>">Facebook</a><% } %>
+    <% if (writer.social.youtube) { %><a href="<%= writer.social.youtube %>">YouTube</a><% } %>
+    <% if (writer.social.website) { %><a href="<%= writer.social.website %>">Website</a><% } %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

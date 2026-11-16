@@ -1,0 +1,38 @@
+
+<%- include('../partials/header') %>
+
+<div class="admin-page">
+  <div class="admin-header">
+    <h1>Contact Message</h1>
+    <a class="btn btn-sm" href="/admin#contact-management">
+      Back to Messages
+    </a>
+  </div>
+
+  <section class="admin-section">
+    <h2>Message Details</h2>
+
+    <p><strong>Name:</strong> <%= contact.name %></p>
+    <p><strong>Email:</strong> <%= contact.email %></p>
+    <p><strong>Subject:</strong> <%= contact.subject || '-' %></p>
+
+    <p>
+      <strong>Date:</strong>
+      <%= contact.created_at
+        ? new Date(contact.created_at).toLocaleString()
+        : '-' %>
+    </p>
+
+    <p>
+      <strong>Status:</strong>
+      <%= contact.is_read ? 'Read' : 'New' %>
+      /
+      <%= contact.replied ? 'Replied' : 'Not Replied' %>
+    </p>
+
+    <h3>Message</h3>
+    <pre><%= contact.message %></pre>
+  </section>
+</div>
+
+<%- include('../partials/footer') %>

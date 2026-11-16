@@ -1,78 +1,144 @@
+
 <%- include('../partials/header') %>
+
 <section class="page-hero">
   <h1>Books</h1>
   <p>Published works by Vipul Kumar Yadav — stories, poetry and life reflections.</p>
 </section>
 
-<% if (error) { %><p class="empty"><%= error %></p><% } %>
+<% if (error) { %>
+  <p class="empty"><%= error %></p>
+<% } %>
 
 <form class="search-bar" action="/books" method="get">
-  <input type="search" name="q" value="<%= query %>" placeholder="Search books by title or description..." aria-label="Search books">
+  <input
+    type="search"
+    name="q"
+    value="<%= query || '' %>"
+    placeholder="Search books by title or description..."
+    aria-label="Search books"
+  >
+
+  <select name="category" aria-label="Filter by category">
+    <option value="">All Categories</option>
+    <% categories.forEach(c => { %>
+      <option value="<%= c %>" <%= category === c ? 'selected' : '' %>>
+        <%= c %>
+      </option>
+    <% }) %>
+  </select>
+
+  <select name="language" aria-label="Filter by language">
+    <option value="">All Languages</option>
+    <% languages.forEach(l => { %>
+      <option value="<%= l %>" <%= language === l ? 'selected' : '' %>>
+        <%= l %>
+      </option>
+    <% }) %>
+  </select>
+
   <button class="btn" type="submit">Search</button>
 </form>
 
-<div class="filter-bar">
-  <select name="category" onchange="this.form.submit()" form="filterForm">
-    <option value="">All Categories</option>
-    <% categories.forEach(c => { %>
-      <option value="<%= c %>" <%= category === c ? 'selected' : '' %>> <%= c %></option>
-    <% }) %>
-  </select>
-  <select name="language" onchange="this.form.submit()" form="filterForm">
-    <option value="">All Languages</option>
-    <% languages.forEach(l => { %>
-      <option value="<%= l %>" <%= language === l ? 'selected' : '' %>> <%= l %></option>
-    <% }) %>
-  </select>
-  <form id="filterForm" method="get" style="display:none"></form>
-</div>
+<% if (!books || books.length === 0) { %>
 
-<% if (!books.length) { %>
   <p class="empty">No books published yet. Check back soon.</p>
+
 <% } else { %>
+
   <div class="book-grid">
     <% books.forEach(b => { %>
+
       <article class="book-card">
+
         <div class="book-cover">
-          <% if (b.coverUrl && !b.coverUrl.includes('PASTE_')) { %>
-            <img src="<%= b.coverUrl %>" alt="<%= b.title %>" onerror="this.parentElement.innerHTML='<div class=cover-fallback>📖</div>'">
+          <% if (b.coverUrl) { %>
+            <img
+              src="/books/<%= encodeURIComponent(b.slug) %>/cover"
+              alt="<%= b.title %> cover"
+              loading="lazy"
+              data-image-fallback="show-next"
+            >
+            <div class="cover-fallback is-hidden">📖</div>
           <% } else { %>
             <div class="cover-fallback">📖</div>
           <% } %>
         </div>
+
         <div class="book-info">
-          <h3><a href="/books/<%= b.slug %>"><%= b.title %></a></h3>
-          <p class="book-subtitle"><%= b.subtitle %></p>
-          <p class="book-desc"><%= (b.description || '').slice(0, 100) %></p>
+
+          <h3>
+            <a href="/books/<%= encodeURIComponent(b.slug) %>">
+              <%= b.title %>
+            </a>
+          </h3>
+
+          <% if (b.subtitle) { %>
+            <p class="book-subtitle"><%= b.subtitle %></p>
+          <% } %>
+
+          <% if (b.description) { %>
+            <p class="book-desc">
+              <%= b.description.length > 120
+                ? b.description.slice(0, 120) + '...'
+                : b.description %>
+            </p>
+          <% } %>
+
           <div class="meta">
-            <span><%= b.author %></span> · <span><%= b.language %></span>
+            <span><%= b.author || 'Vipul Kumar Yadav' %></span>
+            ·
+            <span><%= b.language || '' %></span>
           </div>
-          <div class="book-cats">
-            <% (b.categories || []).forEach(c => { %><span class="tag"><%= c %></span><% }) %>
-          </div>
+
+          <% if (b.categories && b.categories.length) { %>
+            <div class="book-cats">
+              <% b.categories.forEach(c => { %>
+                <span class="tag"><%= c %></span>
+              <% }) %>
+            </div>
+          <% } %>
+
           <div class="book-actions">
-            <a class="btn btn-sm" href="/books/<%= b.slug %>">Read Book</a>
-            <% if (b.pdfUrl) { %>
-              <a class="btn btn-ghost btn-sm" href="<%= b.pdfUrl %>" target="_blank" rel="noopener">Download PDF</a>
+            <a
+              class="btn btn-sm"
+              href="/books/<%= encodeURIComponent(b.slug) %>"
+            >
+              Read Book
+            </a>
+
+            <% if (b.pdfPath || b.pdfUrl) { %>
+              <a
+                class="btn btn-ghost btn-sm"
+                href="/books/<%= encodeURIComponent(b.slug) %>/pdf?download=1"
+              >
+                Download PDF
+              </a>
             <% } %>
           </div>
+
         </div>
       </article>
+
     <% }) %>
   </div>
 
   <% if (total > limit) { %>
     <div class="pagination">
       <% const pages = Math.ceil(total / limit); %>
+
       <% for (let i = 1; i <= pages; i++) { %>
         <% if (i === page) { %>
           <span class="page-active"><%= i %></span>
         <% } else { %>
-          <a href="?page=<%= i %><%= q ? '&q=' + encodeURIComponent(q) : '' %><%= category ? '&category=' + encodeURIComponent(category) : '' %><%= language ? '&language=' + encodeURIComponent(language) : '' %>"><%= i %></a>
+          <a href="?page=<%= i %><%= query ? '&q=' + encodeURIComponent(query) : '' %><%= category ? '&category=' + encodeURIComponent(category) : '' %><%= language ? '&language=' + encodeURIComponent(language) : '' %>">
+            <%= i %>
+          </a>
         <% } %>
       <% } %>
     </div>
   <% } %>
+
 <% } %>
 
 <%- include('../partials/footer') %>

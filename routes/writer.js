@@ -1,7 +1,7 @@
 
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+const crypto = require('crypto');
 
 const router = express.Router();
 
@@ -9,8 +9,12 @@ const { pool } = require('../config/database');
 const { requireAuth, requireWriter } = require('../middleware/auth');
 const Poem = require('../models/Poem');
 const User = require('../models/User');
-const { uploadProfilePhoto, profileUploadDirectory } = require('../config/profileUpload');
-const { uploadPoemFiles, uploadDirectory } = require('../config/poemUpload');
+const { uploadProfilePhoto } = require('../config/profileUpload');
+const { supabase } = require('../config/supabase');
+const { uploadPoemFiles } = require('../config/poemUpload');
+
+const POEM_BUCKET = 'poems';
+const PROFILE_BUCKET = 'profiles';
 
 router.use(requireAuth);
 router.use(requireWriter);
@@ -38,27 +42,6 @@ function getUploadedFile(req, fieldName) {
   return req.files && req.files[fieldName]
     ? req.files[fieldName][0]
     : null;
-}
-
-function removeFile(filename) {
-  if (!filename) return;
-
-  const safeName = path.basename(filename);
-  const filePath = path.join(uploadDirectory, safeName);
-
-  fs.unlink(filePath, error => {
-    if (error && error.code !== 'ENOENT') {
-      console.error('File cleanup error:', error.message);
-    }
-  });
-}
-
-function cleanupUploadedFiles(req) {
-  const image = getUploadedFile(req, 'coverImage');
-  const pdf = getUploadedFile(req, 'poemPdf');
-
-  if (image) removeFile(image.filename);
-  if (pdf) removeFile(pdf.filename);
 }
 
 function validatePoem(body) {
@@ -114,16 +97,155 @@ function renderWritePage(res, options = {}) {
   });
 }
 
+// Validate stored Supabase filenames
 function getSafeStoredName(filename) {
-  if (!filename || typeof filename !== 'string') return null;
+  if (!filename || typeof filename !== 'string') {
+    return null;
+  }
 
   const safeName = path.basename(filename);
 
-  if (safeName !== filename) return null;
+  if (safeName !== filename) {
+    return null;
+  }
+
+  if (
+    !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.(jpg|jpeg|png|webp|pdf)$/i.test(safeName)
+  ) {
+    return null;
+  }
 
   return safeName;
 }
 
+// Upload one file to private Supabase bucket
+async function uploadPoemFile(file) {
+  if (!file) return null;
+
+  const extension = path.extname(file.originalname).toLowerCase();
+  const filename = `${crypto.randomUUID()}${extension}`;
+
+  const { error } = await supabase.storage
+    .from(POEM_BUCKET)
+    .upload(filename, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false
+    });
+
+  if (error) {
+    throw new Error(`Poem file upload failed: ${error.message}`);
+  }
+
+  return {
+    filename,
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+    size: file.size
+  };
+}
+
+// Upload selected poem files and clean up partial uploads on failure
+async function uploadPoemAttachments(req) {
+  const image = getUploadedFile(req, 'coverImage');
+  const pdf = getUploadedFile(req, 'poemPdf');
+
+  const uploaded = {
+    image: null,
+    pdf: null
+  };
+
+  try {
+    if (image) {
+      uploaded.image = await uploadPoemFile(image);
+    }
+
+    if (pdf) {
+      uploaded.pdf = await uploadPoemFile(pdf);
+    }
+
+    return uploaded;
+  } catch (error) {
+    const filenames = [
+      uploaded.image?.filename,
+      uploaded.pdf?.filename
+    ].filter(Boolean);
+
+    if (filenames.length) {
+      const { error: cleanupError } = await supabase.storage
+        .from(POEM_BUCKET)
+        .remove(filenames);
+
+      if (cleanupError) {
+        console.error(
+          'Partial poem upload cleanup error:',
+          cleanupError.message
+        );
+      }
+    }
+
+    throw error;
+  }
+}
+
+// Remove files from private Supabase bucket
+async function removePoemFiles(filenames) {
+  const safeNames = filenames
+    .map(getSafeStoredName)
+    .filter(Boolean);
+
+  if (!safeNames.length) return;
+
+  const { error } = await supabase.storage
+    .from(POEM_BUCKET)
+    .remove([...new Set(safeNames)]);
+
+  if (error) {
+    console.error('Poem storage cleanup error:', error.message);
+  }
+}
+
+// Download a private Supabase file and send it to the browser
+async function sendPoemAttachment(res, filename, mimeType, originalName, kind) {
+  const safeName = getSafeStoredName(filename);
+
+  if (!safeName || !mimeType) {
+    return res.status(404).send('Attachment not found.');
+  }
+
+  const { data, error } = await supabase.storage
+    .from(POEM_BUCKET)
+    .download(safeName);
+
+  if (error || !data) {
+    if (error) {
+      console.error('Poem download error:', error.message);
+    }
+
+    return res.status(404).send('Attachment not found.');
+  }
+
+  const buffer = Buffer.from(await data.arrayBuffer());
+
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Type', mimeType);
+  res.setHeader('Content-Length', buffer.length);
+  res.setHeader('Cache-Control', 'private, no-store');
+
+  if (kind === 'image') {
+    res.setHeader('Content-Disposition', 'inline');
+  } else {
+    const safeOriginalName = path.basename(
+      originalName || 'poem.pdf'
+    ).replace(/["\\\r\n]/g, '_');
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename*=UTF-8''${encodeURIComponent(safeOriginalName)}`
+    );
+  }
+
+  return res.send(buffer);
+}
 
 // --------------------------------------------------
 // Writer Profile Settings
@@ -155,7 +277,7 @@ router.post('/profile', (req, res, next) => {
       return next(error);
     }
 
-    let uploadedPhoto = req.file ? req.file.filename : null;
+    let uploadedPhoto = null;
 
     try {
       const name = (req.body.name || '').trim();
@@ -176,20 +298,12 @@ router.post('/profile', (req, res, next) => {
       const user = await User.findById(getUserId(req));
 
       if (!user) {
-        if (uploadedPhoto) {
-          fs.unlink(path.join(profileUploadDirectory, uploadedPhoto), () => {});
-        }
-
         return res.status(404).render('pages/404', {
           title: 'User Not Found'
         });
       }
 
       if (errors.length) {
-        if (uploadedPhoto) {
-          fs.unlink(path.join(profileUploadDirectory, uploadedPhoto), () => {});
-        }
-
         return res.status(400).render('pages/edit-profile', {
           title: 'Edit Writer Profile',
           user: { ...user, name, bio },
@@ -197,31 +311,99 @@ router.post('/profile', (req, res, next) => {
         });
       }
 
-      const updatedUser = await User.updateProfile(getUserId(req), {
-        name,
-        bio,
-        profile_photo: uploadedPhoto
-      });
+      if (req.file) {
+        const extension = path.extname(
+          req.file.originalname
+        ).toLowerCase();
+
+        uploadedPhoto = `${crypto.randomUUID()}${extension}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(PROFILE_BUCKET)
+          .upload(uploadedPhoto, req.file.buffer, {
+            contentType: req.file.mimetype,
+            upsert: false
+          });
+
+        if (uploadError) {
+          throw new Error(
+            `Profile photo upload failed: ${uploadError.message}`
+          );
+        }
+      }
+
+      let updatedUser;
+
+      try {
+        updatedUser = await User.updateProfile(getUserId(req), {
+          name,
+          bio,
+          profile_photo: uploadedPhoto
+        });
+      } catch (databaseError) {
+        if (uploadedPhoto) {
+          await supabase.storage
+            .from(PROFILE_BUCKET)
+            .remove([uploadedPhoto]);
+          uploadedPhoto = null;
+        }
+
+        throw databaseError;
+      }
+
+      if (!updatedUser) {
+        if (uploadedPhoto) {
+          await supabase.storage
+            .from(PROFILE_BUCKET)
+            .remove([uploadedPhoto]);
+          uploadedPhoto = null;
+        }
+
+        throw new Error('Unable to update writer profile.');
+      }
 
       if (uploadedPhoto && user.profile_photo) {
         const oldPhoto = path.basename(user.profile_photo);
-        const oldPhotoPath = path.join(profileUploadDirectory, oldPhoto);
 
-        fs.unlink(oldPhotoPath, cleanupError => {
-          if (cleanupError && cleanupError.code !== 'ENOENT') {
-            console.error('Old profile photo cleanup error:', cleanupError.message);
+        if (
+          /^[a-f0-9-]+\.(jpg|jpeg|png|webp)$/i.test(oldPhoto) &&
+          oldPhoto !== uploadedPhoto
+        ) {
+          const { error: deleteError } = await supabase.storage
+            .from(PROFILE_BUCKET)
+            .remove([oldPhoto]);
+
+          if (deleteError) {
+            console.error(
+              'Old profile photo cleanup error:',
+              deleteError.message
+            );
           }
-        });
+        }
       }
+
+      uploadedPhoto = null;
 
       if (req.session.user) {
         req.session.user.name = updatedUser.name;
       }
 
       return res.redirect('/writer/profile');
+
     } catch (error) {
+      console.error('Writer profile update error:', error);
+
       if (uploadedPhoto) {
-        fs.unlink(path.join(profileUploadDirectory, uploadedPhoto), () => {});
+        const { error: cleanupError } = await supabase.storage
+          .from(PROFILE_BUCKET)
+          .remove([uploadedPhoto]);
+
+        if (cleanupError) {
+          console.error(
+            'Profile photo cleanup error:',
+            cleanupError.message
+          );
+        }
       }
 
       next(error);
@@ -306,12 +488,15 @@ router.post('/new', (req, res, next) => {
       return next(error);
     }
 
+    let uploaded = {
+      image: null,
+      pdf: null
+    };
+
     try {
       const errors = validatePoem(req.body);
 
       if (errors.length) {
-        cleanupUploadedFiles(req);
-
         return renderWritePage(res, {
           user: req.session.user,
           errors,
@@ -319,14 +504,13 @@ router.post('/new', (req, res, next) => {
         });
       }
 
-      const image = getUploadedFile(req, 'coverImage');
-      const pdf = getUploadedFile(req, 'poemPdf');
+      uploaded = await uploadPoemAttachments(req);
 
       const status = req.body.status === 'pending'
         ? 'pending'
         : 'draft';
 
-      const poem = await Poem.create({
+      await Poem.create({
         userId: getUserId(req),
         title: req.body.title.trim(),
         body: req.body.body.trim(),
@@ -337,20 +521,26 @@ router.post('/new', (req, res, next) => {
         author: (req.body.author || req.session.user.name || 'Anonymous').trim(),
         status,
 
-        imageUrl: image ? image.filename : '',
-        imageOriginalName: image ? image.originalname : null,
-        imageMimeType: image ? image.mimetype : null,
-        imageSize: image ? image.size : null,
+        imageUrl: uploaded.image ? uploaded.image.filename : '',
+        imageOriginalName: uploaded.image ? uploaded.image.originalName : null,
+        imageMimeType: uploaded.image ? uploaded.image.mimeType : null,
+        imageSize: uploaded.image ? uploaded.image.size : null,
 
-        documentUrl: pdf ? pdf.filename : null,
-        documentOriginalName: pdf ? pdf.originalname : null,
-        documentMimeType: pdf ? pdf.mimetype : null,
-        documentSize: pdf ? pdf.size : null
+        documentUrl: uploaded.pdf ? uploaded.pdf.filename : null,
+        documentOriginalName: uploaded.pdf ? uploaded.pdf.originalName : null,
+        documentMimeType: uploaded.pdf ? uploaded.pdf.mimeType : null,
+        documentSize: uploaded.pdf ? uploaded.pdf.size : null
       });
+
+      uploaded = { image: null, pdf: null };
 
       return res.redirect('/writer');
     } catch (error) {
-      cleanupUploadedFiles(req);
+      await removePoemFiles([
+        uploaded.image?.filename,
+        uploaded.pdf?.filename
+      ]);
+
       next(error);
     }
   });
@@ -396,17 +586,19 @@ router.post('/:id/edit', (req, res, next) => {
       return next(error);
     }
 
+    let uploaded = {
+      image: null,
+      pdf: null
+    };
+
     try {
       if (!/^\d+$/.test(req.params.id)) {
-        cleanupUploadedFiles(req);
         return res.status(400).send('Invalid poem ID.');
       }
 
       const poem = await Poem.findById(req.params.id);
 
       if (!poem || String(poem.userId) !== String(getUserId(req))) {
-        cleanupUploadedFiles(req);
-
         return res.status(404).render('pages/404', {
           title: 'Poem Not Found'
         });
@@ -415,8 +607,6 @@ router.post('/:id/edit', (req, res, next) => {
       const errors = validatePoem(req.body);
 
       if (errors.length) {
-        cleanupUploadedFiles(req);
-
         return renderWritePage(res, {
           title: 'Edit Poem',
           user: req.session.user,
@@ -433,6 +623,8 @@ router.post('/:id/edit', (req, res, next) => {
       const removeImage = req.body.removeImage === 'on';
       const removePdf = req.body.removePdf === 'on';
 
+      uploaded = await uploadPoemAttachments(req);
+
       const updateData = {
         title: req.body.title.trim(),
         body: req.body.body.trim(),
@@ -443,12 +635,11 @@ router.post('/:id/edit', (req, res, next) => {
         author: (req.body.author || req.session.user.name || 'Anonymous').trim()
       };
 
-      // Preserve existing image unless replaced or removed
       if (image) {
-        updateData.imageUrl = image.filename;
-        updateData.imageOriginalName = image.originalname;
-        updateData.imageMimeType = image.mimetype;
-        updateData.imageSize = image.size;
+        updateData.imageUrl = uploaded.image.filename;
+        updateData.imageOriginalName = uploaded.image.originalName;
+        updateData.imageMimeType = uploaded.image.mimeType;
+        updateData.imageSize = uploaded.image.size;
       } else if (removeImage) {
         updateData.imageUrl = '';
         updateData.imageOriginalName = null;
@@ -456,12 +647,11 @@ router.post('/:id/edit', (req, res, next) => {
         updateData.imageSize = null;
       }
 
-      // Preserve existing PDF unless replaced or removed
       if (pdf) {
-        updateData.documentUrl = pdf.filename;
-        updateData.documentOriginalName = pdf.originalname;
-        updateData.documentMimeType = pdf.mimetype;
-        updateData.documentSize = pdf.size;
+        updateData.documentUrl = uploaded.pdf.filename;
+        updateData.documentOriginalName = uploaded.pdf.originalName;
+        updateData.documentMimeType = uploaded.pdf.mimeType;
+        updateData.documentSize = uploaded.pdf.size;
       } else if (removePdf) {
         updateData.documentUrl = null;
         updateData.documentOriginalName = null;
@@ -473,7 +663,6 @@ router.post('/:id/edit', (req, res, next) => {
         ? 'pending'
         : 'draft';
 
-      // Published poems edited by their writer must be reviewed again
       if (poem.status === 'published' && requestedStatus === 'pending') {
         updateData.status = 'pending';
       } else {
@@ -483,24 +672,36 @@ router.post('/:id/edit', (req, res, next) => {
       const updatedPoem = await Poem.update(req.params.id, updateData);
 
       if (!updatedPoem) {
-        cleanupUploadedFiles(req);
-        return res.status(404).send('Poem not found.');
+        throw new Error('Poem not found or could not be updated.');
       }
 
-      // Remove replaced/removed old files only after database update
+      const oldFilesToRemove = [];
+
       if (image || removeImage) {
-        if (poem.imageMimeType) {
-          removeFile(poem.imageUrl);
+        if (poem.imageUrl) {
+          oldFilesToRemove.push(poem.imageUrl);
         }
       }
 
       if (pdf || removePdf) {
-        removeFile(poem.documentUrl);
+        if (poem.documentUrl) {
+          oldFilesToRemove.push(poem.documentUrl);
+        }
       }
 
+      // Database update succeeded: old files can now be removed
+      await removePoemFiles(oldFilesToRemove);
+
+      uploaded = { image: null, pdf: null };
+
       return res.redirect('/writer');
+
     } catch (error) {
-      cleanupUploadedFiles(req);
+      await removePoemFiles([
+        uploaded.image?.filename,
+        uploaded.pdf?.filename
+      ]);
+
       next(error);
     }
   });
@@ -530,41 +731,32 @@ router.get('/:id/attachment/:kind', async (req, res, next) => {
       filename = poem.imageMimeType ? poem.imageUrl : null;
       mimeType = poem.imageMimeType;
       originalName = poem.imageOriginalName;
+
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+        return res.status(404).send('Image not found.');
+      }
+
     } else if (req.params.kind === 'pdf') {
       filename = poem.documentUrl;
       mimeType = poem.documentMimeType;
       originalName = poem.documentOriginalName;
+
+      if (mimeType !== 'application/pdf') {
+        return res.status(404).send('PDF not found.');
+      }
+
     } else {
       return res.status(404).send('Attachment not found.');
     }
 
-    const safeName = getSafeStoredName(filename);
+    return await sendPoemAttachment(
+      res,
+      filename,
+      mimeType,
+      originalName,
+      req.params.kind
+    );
 
-    if (!safeName || !mimeType) {
-      return res.status(404).send('Attachment not found.');
-    }
-
-    const filePath = path.join(uploadDirectory, safeName);
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).send('File not found.');
-    }
-
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Type', mimeType);
-
-    if (req.params.kind === 'image') {
-      res.setHeader('Content-Disposition', 'inline');
-    } else {
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${encodeURIComponent(originalName || 'poem.pdf')}"`
-      );
-    }
-
-    res.sendFile(filePath, error => {
-      if (error && !res.headersSent) next(error);
-    });
   } catch (error) {
     next(error);
   }
@@ -591,14 +783,14 @@ router.post('/:id/delete', async (req, res, next) => {
     const deletedPoem = await Poem.deleteById(req.params.id);
 
     if (deletedPoem) {
-      if (poem.imageMimeType) {
-        removeFile(poem.imageUrl);
-      }
-
-      removeFile(poem.documentUrl);
+      await removePoemFiles([
+        poem.imageUrl,
+        poem.documentUrl
+      ]);
     }
 
-    res.redirect('/writer');
+    return res.redirect('/writer');
+
   } catch (error) {
     next(error);
   }

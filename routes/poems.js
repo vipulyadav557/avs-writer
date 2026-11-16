@@ -1,14 +1,15 @@
 
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 
 const router = express.Router();
 
 const { isConnected } = require('../config/database');
+const { supabase } = require('../config/supabase');
 const Poem = require('../models/Poem');
-const { uploadDirectory } = require('../config/poemUpload');
 const site = require('../config/site');
+
+const POEM_BUCKET = 'poems';
 
 function denyWrites(req, res) {
   return res.status(403).send(
@@ -27,10 +28,63 @@ function getSafeStoredName(filename) {
     return null;
   }
 
+  if (
+    !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.(jpg|jpeg|png|webp|pdf)$/i.test(safeName)
+  ) {
+    return null;
+  }
+
   return safeName;
 }
 
+async function sendPoemAttachment(res, filename, mimeType, originalName, kind) {
+  const safeName = getSafeStoredName(filename);
+
+  if (!safeName || !mimeType) {
+    return res.status(404).send('Attachment not found.');
+  }
+
+  const { data, error } = await supabase.storage
+    .from(POEM_BUCKET)
+    .download(safeName);
+
+  if (error || !data) {
+    if (error) {
+      console.error('Public poem attachment download error:', error.message);
+    }
+
+    return res.status(404).send('Attachment not found.');
+  }
+
+  const buffer = Buffer.from(await data.arrayBuffer());
+
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Type', mimeType);
+  res.setHeader('Content-Length', buffer.length);
+
+  if (kind === 'image') {
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  } else {
+    const safeOriginalName = path.basename(
+      originalName || 'poem.pdf'
+    ).replace(/["\\\r\n]/g, '_');
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename*=UTF-8''${encodeURIComponent(safeOriginalName)}`
+    );
+
+    res.setHeader('Cache-Control', 'private, no-store');
+  }
+
+  return res.send(buffer);
+}
+
+// --------------------------------------------------
 // Poetry Library
+// --------------------------------------------------
+
 router.get('/', async (req, res) => {
   if (!isConnected()) {
     return res.render('pages/poetry', {
@@ -77,8 +131,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Secure public attachment delivery.
-// Only published poems can be accessed here.
+// --------------------------------------------------
+// Secure Public Attachment Delivery
+// Only published poems can be accessed
+// --------------------------------------------------
+
 router.get('/:slug/attachment/:kind', async (req, res, next) => {
   try {
     const poem = await Poem.findOnePublished(req.params.slug);
@@ -113,49 +170,23 @@ router.get('/:slug/attachment/:kind', async (req, res, next) => {
       return res.status(404).send('Attachment not found.');
     }
 
-    const safeName = getSafeStoredName(filename);
-
-    if (!safeName || !mimeType) {
-      return res.status(404).send('Attachment not found.');
-    }
-
-    const filePath = path.join(uploadDirectory, safeName);
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).send('File not found.');
-    }
-
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Type', mimeType);
-
-    if (req.params.kind === 'image') {
-      res.setHeader('Content-Disposition', 'inline');
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-    } else {
-      const safeOriginalName = path.basename(
-        originalName || 'poem.pdf'
-      ).replace(/["\\\r\n]/g, '_');
-
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${safeOriginalName}"`
-      );
-
-      res.setHeader('Cache-Control', 'private, no-store');
-    }
-
-    res.sendFile(filePath, error => {
-      if (error && !res.headersSent) {
-        next(error);
-      }
-    });
+    return await sendPoemAttachment(
+      res,
+      filename,
+      mimeType,
+      originalName,
+      req.params.kind
+    );
 
   } catch (error) {
     next(error);
   }
 });
 
-// Single published poem
+// --------------------------------------------------
+// Single Published Poem
+// --------------------------------------------------
+
 router.get('/:slug', async (req, res) => {
   if (!isConnected()) {
     return res.status(503).render('pages/500', {
@@ -186,7 +217,10 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
-// Public routes cannot create, edit, publish or delete poems.
+// --------------------------------------------------
+// Public routes cannot modify poems
+// --------------------------------------------------
+
 router.post('/', denyWrites);
 router.put('/:slug', denyWrites);
 router.patch('/:slug/publish', denyWrites);

@@ -514,3 +514,379 @@ iframe {
   color: #c9a96e;
   border-color: #c9a96e;
 }
+
+/* ==========================================
+   AVS WRITER - PROFESSIONAL BOOK DESIGN
+========================================== */
+
+/* Books listing */
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 24px;
+  padding: 24px 0;
+}
+
+.book-card {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid #2a2b30;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.book-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+}
+
+.book-cover {
+  width: 100%;
+  height: 260px;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #121318;
+}
+
+.book-cover img {
+  display: block;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 5px;
+  box-shadow: 0 5px 18px rgba(0,0,0,0.35);
+}
+
+.cover-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  background: #222329;
+  border-radius: 8px;
+}
+
+.book-info {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.book-info h3 {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 1.15rem;
+}
+
+.book-info h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.book-info h3 a:hover {
+  color: var(--text);
+}
+
+.book-subtitle,
+.book-desc {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.book-desc {
+  line-height: 1.6;
+}
+
+.book-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.book-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 18px;
+}
+
+.btn-sm {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* Single book detail page */
+.book-detail {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 36px;
+  align-items: start;
+  max-width: 1050px;
+  margin: 35px auto;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid #2a2b30;
+  border-radius: 14px;
+}
+
+.book-detail-cover {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12px;
+  background: #121318;
+  border-radius: 10px;
+}
+
+.book-detail-cover img {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  max-height: 390px;
+  height: auto;
+  object-fit: contain;
+  border-radius: 5px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.book-detail-cover .cover-fallback {
+  min-height: 300px;
+}
+
+.book-detail-info {
+  min-width: 0;
+}
+
+.book-detail-info h2 {
+  color: var(--accent);
+  margin-top: 0;
+}
+
+.book-detail-info p {
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+
+.book-description {
+  margin-top: 24px;
+  padding-top: 15px;
+  border-top: 1px solid #2a2b30;
+}
+
+.book-description h3 {
+  color: var(--accent);
+}
+
+.book-extra {
+  max-width: 1050px;
+  margin: 24px auto;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid #2a2b30;
+  border-radius: 12px;
+}
+
+.book-extra h2 {
+  color: var(--accent);
+  margin-top: 0;
+}
+
+.book-extra li {
+  margin-bottom: 9px;
+}
+
+.book-back {
+  max-width: 1050px;
+  margin: 25px auto 40px;
+}
+
+/* Search and filters */
+.search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 22px 0;
+}
+
+.search-bar input,
+.search-bar select {
+  min-width: 150px;
+  flex: 1;
+  padding: 11px 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid #383940;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.search-bar button {
+  flex-shrink: 0;
+}
+
+/* Responsive books layout */
+@media (max-width: 768px) {
+  .book-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .book-cover {
+    height: 230px;
+  }
+
+  .book-detail {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    margin: 20px auto;
+    padding: 16px;
+  }
+
+  .book-detail-cover img {
+    max-height: 350px;
+    max-width: 230px;
+  }
+
+  .book-extra {
+    margin: 18px auto;
+    padding: 18px;
+  }
+
+  .book-back {
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .book-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .book-cover {
+    height: 260px;
+  }
+
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .search-bar input,
+  .search-bar select,
+  .search-bar button {
+    width: 100%;
+  }
+}
+
+
+/* AVS HOME HERO DESIGN */
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 5rem 2rem;
+  margin: 1.5rem 0 2rem;
+  border-radius: 16px;
+  background:
+    linear-gradient(rgba(14, 15, 18, 0.48), rgba(14, 15, 18, 0.72)),
+    url('/images/home-hero.png') center center / cover no-repeat;
+  border: 1px solid rgba(201, 169, 110, 0.25);
+}
+
+.home-hero h1 {
+  color: #e5c58d;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  margin: 0 0 1rem;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
+}
+
+.home-hero .hero-mantra {
+  color: #fff4df;
+  font-size: clamp(1.15rem, 2.5vw, 1.7rem);
+  line-height: 1.9;
+  margin: 0 auto 1rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.hero-word,
+.hero-hindi {
+  opacity: 0;
+  animation: avsHeroFade 6s infinite;
+  animation-fill-mode: both;
+}
+
+.hero-word-one {
+  animation-delay: 0s;
+}
+
+.hero-word-two {
+  animation-delay: 1.5s;
+}
+
+.hero-word-three {
+  animation-delay: 3s;
+}
+
+.hero-hindi {
+  display: block;
+  font-size: 0.85em;
+  animation-delay: 4.5s;
+}
+
+@keyframes avsHeroFade {
+  0%, 4% {
+    opacity: 0;
+  }
+  12%, 88% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.home-hero p {
+  max-width: 680px;
+  margin: 1rem auto 1.5rem;
+  color: #f1e9dc;
+  text-shadow: 0 2px 7px rgba(0, 0, 0, 0.85);
+}
+
+.home-hero .home-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .home-hero {
+    padding: 3.5rem 1rem;
+    background-position: center;
+  }
+
+  .home-hero .hero-mantra {
+    line-height: 1.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-word,
+  .hero-hindi {
+    animation: none;
+    opacity: 1;
+  }
+}
+/* END AVS HOME HERO DESIGN */

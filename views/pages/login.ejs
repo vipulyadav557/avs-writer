@@ -1,155 +1,7 @@
 
 <%- include('../partials/header') %>
 
-<style>
-.login-page {
-  min-height: 78vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 55px 18px;
-  background: linear-gradient(135deg, #101a30, #192b49, #101827);
-  border-radius: 16px;
-  margin: 25px 0;
-}
 
-.login-card {
-  width: 100%;
-  max-width: 430px;
-  background: #fff;
-  padding: 42px 36px;
-  border-radius: 18px;
-  box-shadow: 0 25px 65px rgba(0,0,0,.3);
-}
-
-.login-brand {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.login-logo {
-  width: 58px;
-  height: 58px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-  border-radius: 16px;
-  background: #172944;
-  color: #e9bd68;
-  font-size: 27px;
-  font-weight: 800;
-}
-
-.login-brand h1 {
-  color: #172944;
-  font-size: 27px;
-  margin: 0 0 8px;
-}
-
-.login-brand p {
-  color: #788397;
-  font-size: 14px;
-}
-
-.login-form label {
-  display: block;
-  color: #26354b;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.login-form .field {
-  margin-bottom: 21px;
-}
-
-.login-form input {
-  width: 100%;
-  height: 48px;
-  padding: 0 14px;
-  border: 1px solid #dce2eb;
-  border-radius: 9px;
-  background: #f8f9fc;
-  color: #172944;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.password-wrap {
-  position: relative;
-}
-
-.password-wrap input {
-  padding-right: 65px;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  border: none;
-  background: transparent;
-  color: #9a793e;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.login-submit {
-  width: 100%;
-  height: 49px;
-  border: none;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #c49a50, #a9792c);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 5px;
-}
-
-.login-errors {
-  background: #fff0f0;
-  border: 1px solid #ffd1d1;
-  color: #b42318;
-  border-radius: 9px;
-  padding: 10px 14px;
-  margin-bottom: 20px;
-  font-size: 13px;
-}
-
-.login-footer {
-  text-align: center;
-  margin-top: 25px;
-  color: #8a94a5;
-  font-size: 12px;
-}
-
-.register-link {
-  text-align: center;
-  margin-top: 18px;
-  font-size: 14px;
-  color: #26354b;
-}
-
-.register-link a {
-  color: #a9792c;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-@media (max-width: 480px) {
-  .login-page {
-    padding: 35px 10px;
-  }
-
-  .login-card {
-    padding: 32px 22px;
-  }
-}
-</style>
 
 <div class="login-page">
   <div class="login-card">
@@ -205,7 +57,7 @@
           <button
             type="button"
             class="password-toggle"
-            onclick="togglePassword()"
+            data-password-toggle
           >SHOW</button>
         </div>
       </div>
@@ -228,19 +80,6 @@
   </div>
 </div>
 
-<script>
-function togglePassword() {
-  const password = document.getElementById('password');
-  const button = document.querySelector('.password-toggle');
 
-  if (password.type === 'password') {
-    password.type = 'text';
-    button.textContent = 'HIDE';
-  } else {
-    password.type = 'password';
-    button.textContent = 'SHOW';
-  }
-}
-</script>
 
 <%- include('../partials/footer') %>

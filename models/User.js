@@ -41,6 +41,44 @@ async function findById(id) {
     return result.rows[0] || null;
 }
 
+async function findAllWriters() {
+    const result = await pool.query(
+        `SELECT
+            user_id,
+            name,
+            email,
+            role,
+            is_active,
+            last_login,
+            created_at
+         FROM users
+         WHERE role = 'writer'
+         ORDER BY created_at DESC, user_id DESC`
+    );
+
+    return result.rows;
+}
+
+async function updateWriterStatus(id, isActive) {
+    const result = await pool.query(
+        `UPDATE users
+         SET is_active = $1,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE user_id = $2
+           AND role = 'writer'
+         RETURNING
+            user_id,
+            name,
+            email,
+            role,
+            is_active,
+            last_login`,
+        [isActive, id]
+    );
+
+    return result.rows[0] || null;
+}
+
 async function findPublicProfile(slug) {
     const result = await pool.query(
         `SELECT
@@ -97,44 +135,56 @@ async function updateLastLogin(id) {
     );
 }
 
-
 async function createUser({ name, email, password, role = 'writer' }) {
     const passwordHash = await bcrypt.hash(password, 12);
+    const client = await pool.connect();
 
-    const result = await pool.query(
-        `INSERT INTO users
-            (name, email, password_hash, role)
-         VALUES ($1, $2, $3, $4)
-         RETURNING user_id, name, email, role`,
-        [name, email.toLowerCase().trim(), passwordHash, role]
-    );
+    try {
+        await client.query('BEGIN');
 
-    const user = result.rows[0];
+        const result = await client.query(
+            `INSERT INTO users
+                (name, email, password_hash, role)
+             VALUES ($1, $2, $3, $4)
+             RETURNING user_id, name, email, role`,
+            [name, email.toLowerCase().trim(), passwordHash, role]
+        );
 
-    const baseSlug = user.name
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') || 'writer';
+        const user = result.rows[0];
 
-    const profileSlug = `${baseSlug}-${user.user_id}`;
+        const baseSlug = user.name
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '') || 'writer';
 
-    const updatedResult = await pool.query(
-        `UPDATE users
-         SET profile_slug = $1,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE user_id = $2
-         RETURNING user_id, name, email, role, profile_slug`,
-        [profileSlug, user.user_id]
-    );
+        const profileSlug = `${baseSlug}-${user.user_id}`;
 
-    return updatedResult.rows[0];
+        const updatedResult = await client.query(
+            `UPDATE users
+             SET profile_slug = $1,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = $2
+             RETURNING user_id, name, email, role, profile_slug`,
+            [profileSlug, user.user_id]
+        );
+
+        await client.query('COMMIT');
+
+        return updatedResult.rows[0];
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
 }
-
 
 module.exports = {
     findByEmail,
     findById,
+    findAllWriters,
+    updateWriterStatus,
     findPublicProfile,
     updateProfile,
     verifyPassword,

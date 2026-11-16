@@ -1,17 +1,9 @@
 
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
 
-const uploadDirectory = path.join(
-  __dirname,
-  '..',
-  'storage',
-  'poems'
-);
-
-fs.mkdirSync(uploadDirectory, { recursive: true });
+const { validateUploadedFile } = require('./fileSignature');
+const { verifyCsrfTokenAfterUpload } = require('../middleware/csrf');
 
 const allowedTypes = {
   'image/jpeg': ['.jpg', '.jpeg'],
@@ -20,32 +12,22 @@ const allowedTypes = {
   'application/pdf': ['.pdf']
 };
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDirectory);
-  },
-
-  filename: (req, file, cb) => {
-    const extension = path.extname(file.originalname).toLowerCase();
-    const filename = `${crypto.randomUUID()}${extension}`;
-
-    cb(null, filename);
-  }
-});
+const uploadErrorMessage =
+  'Only JPG, JPEG, PNG, WEBP and PDF files are allowed.';
 
 function fileFilter(req, file, cb) {
   const extension = path.extname(file.originalname).toLowerCase();
   const extensions = allowedTypes[file.mimetype];
 
   if (!extensions || !extensions.includes(extension)) {
-    return cb(new Error('Only JPG, JPEG, PNG, WEBP and PDF files are allowed.'));
+    return cb(new Error(uploadErrorMessage));
   }
 
-  cb(null, true);
+  return cb(null, true);
 }
 
-const uploadPoemFiles = multer({
-  storage,
+const multerUpload = multer({
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: {
     files: 2,
@@ -56,7 +38,37 @@ const uploadPoemFiles = multer({
   { name: 'poemPdf', maxCount: 1 }
 ]);
 
+function uploadPoemFiles(req, res, callback) {
+  multerUpload(req, res, (error) => {
+    if (error) {
+      return callback(error);
+    }
+
+    return verifyCsrfTokenAfterUpload(req, res, (csrfError) => {
+      if (csrfError) {
+        return callback(csrfError);
+      }
+
+      try {
+        const files = Object.values(req.files || {}).flat();
+
+        for (const file of files) {
+          validateUploadedFile(
+            file,
+            allowedTypes,
+            uploadErrorMessage
+          );
+        }
+
+        return callback();
+      } catch (validationError) {
+        return callback(validationError);
+      }
+    });
+  });
+}
+
 module.exports = {
   uploadPoemFiles,
-  uploadDirectory
+  uploadDirectory: null
 };

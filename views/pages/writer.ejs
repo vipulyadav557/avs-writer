@@ -2,7 +2,7 @@
 <section class="writer-profile">
   <div class="writer-photo">
     <% if (writer.photoUrl && !writer.photoUrl.includes('PASTE_')) { %>
-      <img src="/website/public/images/writer profile.jfif" alt="<%= writer.name %>" onerror="this.style.display='none'">
+      <img src="/website/public/images/writer profile.jfif" alt="<%= writer.name %>" data-image-fallback="hide">
     <% } else { %>
       <div class="photo-fallback"></div>
     <% } %>

@@ -1,8 +1,17 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const { isConnected } = require('../config/database');
 const Contact = require('../models/Contact');
+
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many messages submitted. Please try again after 15 minutes.'
+});
 
 const contactRules = [
   body('name')
@@ -35,7 +44,7 @@ router.get('/', (req, res) => {
   });
 });
 
-router.post('/', contactRules, async (req, res) => {
+router.post('/', contactLimiter, contactRules, async (req, res) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {

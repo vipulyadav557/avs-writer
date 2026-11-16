@@ -1,5 +1,4 @@
-
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('writeForm');
 
   if (!form) return;
@@ -19,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const previewBtn = document.getElementById('previewBtn');
 
-  // Word and character counter
   function updateCounts() {
     const text = content.value;
 
@@ -31,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     chars.textContent = text.length;
   }
 
-  // Safe live preview
   function updatePreview() {
     const poemTitle = title.value.trim() || 'Your poem title will appear here';
 
@@ -43,10 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const isUrdu = rtl.checked || language.value === 'Urdu';
 
     preview.dir = isUrdu ? 'rtl' : 'ltr';
-    preview.style.textAlign = isUrdu ? 'right' : 'left';
+    preview.classList.toggle('preview-align-right', isUrdu);
+    preview.classList.toggle('preview-align-left', !isUrdu);
   }
 
-  // Update when typing
   content.addEventListener('input', () => {
     updateCounts();
     updatePreview();
@@ -54,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   title.addEventListener('input', updatePreview);
 
-  // Urdu language selection
   if (language) {
     language.addEventListener('change', () => {
       if (language.value === 'Urdu') {
@@ -67,10 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Manual RTL option
   rtl.addEventListener('change', updatePreview);
 
-  // Preview button
   previewBtn.addEventListener('click', () => {
     updateCounts();
     updatePreview();
@@ -81,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // File size validation before upload
   form.addEventListener('submit', event => {
     const image = document.getElementById('coverImage');
     const pdf = document.getElementById('poemPdf');
@@ -100,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Initial state
   updateCounts();
   updatePreview();
 });

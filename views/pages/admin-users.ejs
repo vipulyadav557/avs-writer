@@ -1,0 +1,156 @@
+
+<%- include('../partials/header') %>
+
+
+
+<main class="users-page">
+
+  <div class="users-topbar">
+    <a href="/admin" class="users-back">← Back to Admin Dashboard</a>
+    <span class="users-count">AVS Writer · Administration</span>
+  </div>
+
+  <div class="users-heading">
+    <h1>User Management</h1>
+    <p>Manage writer accounts, monitor account status and control platform access.</p>
+  </div>
+
+  <% if (message) { %>
+    <div class="users-alert users-alert-success">
+      <%= message %>
+    </div>
+  <% } %>
+
+  <% if (error) { %>
+    <div class="users-alert users-alert-error">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <%
+    const totalWriters = writers.length;
+    const activeWriters = writers.filter(writer => writer.is_active).length;
+    const inactiveWriters = totalWriters - activeWriters;
+  %>
+
+  <section class="users-summary">
+    <div class="users-stat">
+      <span>Total Writers</span>
+      <strong><%= totalWriters %></strong>
+    </div>
+
+    <div class="users-stat">
+      <span>Active Accounts</span>
+      <strong><%= activeWriters %></strong>
+    </div>
+
+    <div class="users-stat">
+      <span>Inactive Accounts</span>
+      <strong><%= inactiveWriters %></strong>
+    </div>
+  </section>
+
+  <section class="users-panel">
+
+    <div class="users-panel-header">
+      <h2>Registered Writers</h2>
+      <span class="users-count"><%= totalWriters %> account(s)</span>
+    </div>
+
+    <% if (writers.length > 0) { %>
+
+      <div class="users-table-wrap">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Writer</th>
+              <th>Email Address</th>
+              <th>Account Status</th>
+              <th>Last Login</th>
+              <th>Joined</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <% writers.forEach(writer => { %>
+              <tr>
+                <td>
+                  <div class="writer-name"><%= writer.name %></div>
+                  <div class="writer-id">ID: #<%= writer.user_id %></div>
+                </td>
+
+                <td>
+                  <div class="writer-email"><%= writer.email %></div>
+                </td>
+
+                <td>
+                  <% if (writer.is_active) { %>
+                    <span class="status-pill status-active">Active</span>
+                  <% } else { %>
+                    <span class="status-pill status-inactive">Inactive</span>
+                  <% } %>
+                </td>
+
+                <td>
+                  <% if (writer.last_login) { %>
+                    <%= new Date(writer.last_login).toLocaleString('en-IN', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short'
+                    }) %>
+                  <% } else { %>
+                    <span class="writer-email">Never logged in</span>
+                  <% } %>
+                </td>
+
+                <td>
+                  <% if (writer.created_at) { %>
+                    <%= new Date(writer.created_at).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }) %>
+                  <% } else { %>
+                    —
+                  <% } %>
+                </td>
+
+                <td>
+                  <form
+                    action="/admin/users/<%= writer.user_id %>/status"
+                    method="POST"
+                   data-confirm="Are you sure you want to change this writer account status?"
+                  >
+                    <% if (writer.is_active) { %>
+                      <input type="hidden" name="status" value="inactive">
+                      <button type="submit" class="writer-action action-deactivate">
+                        Deactivate
+                      </button>
+                    <% } else { %>
+                      <input type="hidden" name="status" value="active">
+                      <button type="submit" class="writer-action action-activate">
+                        Activate
+                      </button>
+                    <% } %>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+    <% } else { %>
+
+      <div class="users-empty">
+        <h3>No Writers Registered Yet</h3>
+        <p>Writer accounts will appear here after registration.</p>
+      </div>
+
+    <% } %>
+
+  </section>
+
+</main>
+
+<%- include('../partials/footer') %>

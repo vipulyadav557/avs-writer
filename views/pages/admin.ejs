@@ -1,189 +1,101 @@
 
 <%- include('../partials/header') %>
 
-<style>
-.admin-page {
-  max-width: 1200px;
-  margin: 30px auto;
-  padding: 20px;
-  color: #222;
-}
-.admin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 30px;
-}
-.admin-header h1 { margin: 0; }
-.admin-user {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-.admin-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 18px;
-  margin-bottom: 35px;
-}
-.stat-card, .admin-section {
-  padding: 22px;
-  border: 1px solid #bbb;
-  border-radius: 12px;
-  background: #e6d4d4;
-  color: #222;
-}
-.stat-card h3 {
-  font-size: 28px;
-  margin: 0 0 8px;
-  color: #222;
-}
-.stat-card p { margin: 0; }
-.admin-section { margin: 30px 0; }
-.admin-section h2 {
-  margin-top: 0;
-  margin-bottom: 20px;
-}
-.admin-form {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-.admin-form .full-width { grid-column: 1 / -1; }
-.admin-form label {
-  display: block;
-  margin-bottom: 7px;
-  font-weight: 600;
-  color: #222;
-}
-.admin-form input,
-.admin-form textarea,
-.admin-form select {
-  width: 100%;
-  padding: 11px;
-  border: 1px solid #999;
-  border-radius: 7px;
-  font: inherit;
-  box-sizing: border-box;
-  background: #fff;
-  color: #222;
-}
-.admin-form textarea { resize: vertical; }
-.admin-table-wrapper {
-  width: 100%;
-  overflow-x: auto;
-}
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 750px;
-  color: #222;
-}
-.admin-table th,
-.admin-table td {
-  padding: 12px;
-  border-bottom: 1px solid #bbb;
-  text-align: left;
-  vertical-align: middle;
-}
-.admin-table th {
-  font-weight: 700;
-  background: #eee;
-  color: #111;
-}
-.admin-table td { color: #333; }
-.admin-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 7px;
-}
-.admin-actions form { margin: 0; }
-.admin-actions .btn { white-space: nowrap; }
-.admin-status {
-  display: inline-block;
-  padding: 5px 9px;
-  margin: 2px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #222;
-  background: #eee;
-}
-.status-pending { background: #ffe5a3; }
-.status-published { background: #b8edc5; }
-.status-rejected { background: #f4c1c1; }
-.status-draft { background: #ddd; }
-.status-featured {
-  background: #f7d889;
-  color: #5b4100;
-}
-.admin-divider {
-  margin: 25px 0;
-  border: 0;
-  border-top: 1px solid #bbb;
-}
-.attachment-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.attachment-links a { font-size: 13px; }
-@media (max-width: 650px) {
-  .admin-page { padding: 12px; }
-  .admin-section { padding: 15px; }
-  .admin-form { grid-template-columns: 1fr; }
-  .admin-form .full-width { grid-column: auto; }
-}
-</style>
+
 
 <div class="admin-page">
+
   <div class="admin-header">
     <h1>Admin Dashboard</h1>
+
     <div class="admin-user">
-      <span><%= user.name %></span>
+      <span>Welcome, <%= user?.name || 'Admin' %></span>
       <a class="btn btn-ghost btn-sm" href="/auth/logout">Logout</a>
     </div>
   </div>
 
   <% if (!dbAvailable) { %>
+
     <p class="empty">
       Database not configured. Content management is unavailable.
     </p>
+
   <% } else { %>
 
-    <!-- Statistics -->
+    <!-- Dashboard Statistics -->
+
     <div class="admin-stats">
       <div class="stat-card">
         <h3><%= stats.poems %></h3>
         <p>Total Poems</p>
       </div>
+
       <div class="stat-card">
         <h3><%= stats.pending || 0 %></h3>
         <p>Pending Approval</p>
       </div>
+
       <div class="stat-card">
         <h3><%= stats.books %></h3>
         <p>Total Books</p>
       </div>
+
       <div class="stat-card">
         <h3><%= stats.contacts %></h3>
         <p>Messages</p>
       </div>
+
       <div class="stat-card">
         <h3><%= stats.users %></h3>
         <p>Registered Users</p>
       </div>
     </div>
 
+    <!-- Admin Quick Navigation -->
+
+    <section class="admin-navigation">
+
+      <a href="/admin/users" class="admin-nav-card">
+        <div class="admin-nav-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div>
+        <div class="admin-nav-content">
+          <strong>User Management</strong>
+          <span>Manage writer accounts and access permissions</span>
+        </div>
+      </a>
+
+      <a href="#poem-management" class="admin-nav-card">
+        <div class="admin-nav-icon"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i></div>
+        <div class="admin-nav-content">
+          <strong>Poem Management</strong>
+          <span>Review, publish and manage poems</span>
+        </div>
+      </a>
+
+      <a href="#book-management" class="admin-nav-card">
+        <div class="admin-nav-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></div>
+        <div class="admin-nav-content">
+          <strong>Book Management</strong>
+          <span>Upload, edit and manage published books</span>
+        </div>
+      </a>
+
+      <a href="#contact-management" class="admin-nav-card">
+        <div class="admin-nav-icon"><i class="fa-solid fa-envelope" aria-hidden="true"></i></div>
+        <div class="admin-nav-content">
+          <strong>Contact Messages</strong>
+          <span>View and manage incoming messages</span>
+        </div>
+      </a>
+
+    </section>
+
     <!-- Add New Poem -->
+
     <section class="admin-section">
       <h2>Add New Poem</h2>
-      <form method="POST"
-            action="/admin/poems/add"
-            class="admin-form">
+
+      <form method="POST" action="/admin/poems/add" class="admin-form">
+
         <div>
           <label for="poem-title">Poem Title *</label>
           <input type="text" id="poem-title" name="title"
@@ -198,8 +110,7 @@
 
         <div class="full-width">
           <label for="poem-body">Poem Content *</label>
-          <textarea id="poem-body" name="body"
-                    rows="9" required></textarea>
+          <textarea id="poem-body" name="body" rows="9" required></textarea>
         </div>
 
         <div>
@@ -255,11 +166,13 @@
         <div class="full-width">
           <button class="btn" type="submit">Add Poem</button>
         </div>
+
       </form>
     </section>
 
     <!-- Poem Management -->
-    <section class="admin-section">
+
+    <section class="admin-section" id="poem-management">
       <h2>Poem Management (<%= stats.poems %>)</h2>
 
       <% if (!poems.length) { %>
@@ -288,7 +201,7 @@
                   <td><%= p.author || 'AVS Writer' %></td>
 
                   <td>
-                    <div class="attachment-links">
+                    <div class="book-file-links">
                       <% if (p.imageMimeType) { %>
                         <a href="/admin/poems/<%= p.poemId %>/attachment/image"
                            target="_blank">View Image</a>
@@ -312,9 +225,7 @@
                     </span>
 
                     <% if (p.isFeatured) { %>
-                      <span class="admin-status status-featured">
-                        Featured
-                      </span>
+                      <span class="admin-status status-featured">Featured</span>
                     <% } %>
                   </td>
 
@@ -344,9 +255,7 @@
                         <form method="POST"
                               action="/admin/poems/<%= p.poemId %>/status">
                           <input type="hidden" name="status" value="draft">
-                          <button class="btn btn-sm" type="submit">
-                            Unpublish
-                          </button>
+                          <button class="btn btn-sm" type="submit">Unpublish</button>
                         </form>
                       <% } else { %>
                         <form method="POST"
@@ -362,27 +271,22 @@
                         <form method="POST"
                               action="/admin/poems/<%= p.poemId %>/status">
                           <input type="hidden" name="status" value="rejected">
-                          <button class="btn btn-sm" type="submit">
-                            Reject
-                          </button>
+                          <button class="btn btn-sm" type="submit">Reject</button>
                         </form>
-                      <% } %>
-
-                      <% if (p.status === 'rejected') { %>
+                      <% } else { %>
                         <form method="POST"
                               action="/admin/poems/<%= p.poemId %>/status">
                           <input type="hidden" name="status" value="draft">
-                          <button class="btn btn-sm" type="submit">
-                            Move to Draft
-                          </button>
+                          <button class="btn btn-sm" type="submit">Move to Draft</button>
                         </form>
                       <% } %>
 
                       <form method="POST"
                             action="/admin/poems/<%= p.poemId %>/delete"
-                            onsubmit="return confirm('Delete this poem permanently?');">
+                            data-confirm="Delete this poem permanently?">
                         <button class="btn btn-sm" type="submit">Delete</button>
                       </form>
+
                     </div>
                   </td>
                 </tr>
@@ -390,52 +294,421 @@
             </tbody>
           </table>
         </div>
+
       <% } %>
     </section>
 
-    <!-- Books Management -->
+    <!-- Add New Book -->
+
     <section class="admin-section">
-      <h2>Books (<%= stats.books %>)</h2>
+      <h2>Upload New Book</h2>
+
+      <p class="admin-help">
+        Only Admin can upload books. PDF is required. Cover image is optional.
+        Supported cover formats: JPG, PNG and WebP.
+      </p>
+
+      <form method="POST"
+            action="/admin/books/add"
+            enctype="multipart/form-data"
+            class="admin-form">
+
+        <div>
+          <label for="book-title">Book Title *</label>
+          <input type="text" id="book-title" name="title"
+                 maxlength="250" required>
+        </div>
+
+        <div>
+          <label for="book-subtitle">Subtitle</label>
+          <input type="text" id="book-subtitle" name="subtitle"
+                 maxlength="250">
+        </div>
+
+        <div>
+          <label for="book-author">Author Name</label>
+          <input type="text" id="book-author" name="author"
+                 maxlength="150" placeholder="Author name">
+        </div>
+
+        <div>
+          <label for="book-language">Language *</label>
+          <select id="book-language" name="language" required>
+            <option value="">Select Language</option>
+            <% ['Hindi', 'Urdu', 'English', 'Bhojpuri'].forEach(language => { %>
+              <option value="<%= language %>"><%= language %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="full-width">
+          <label for="book-description">Description</label>
+          <textarea id="book-description" name="description"
+                    rows="5"></textarea>
+        </div>
+
+        <div>
+          <label for="book-categories">Categories *</label>
+          <select id="book-categories" name="categories" multiple required>
+            <% [
+              'Life Experiences',
+              'Self Improvement',
+              'Relationships',
+              'Life Lessons',
+              'Personal Experiences',
+              'Poetry',
+              'Shayari',
+              'Ghazal',
+              'Nazm',
+              'Kahani',
+              'Bhojpuri Songs',
+              'Fiction',
+              'Non-Fiction',
+              'Memoir'
+            ].forEach(category => { %>
+              <option value="<%= category %>"><%= category %></option>
+            <% }) %>
+          </select>
+          <small>Select one or more categories. Use Ctrl to select multiple.</small>
+        </div>
+
+        <div>
+          <label for="book-cover">Cover Image</label>
+          <input type="file" id="book-cover" name="cover"
+                 accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+        </div>
+
+        <div class="full-width">
+          <label for="book-pdf">Book PDF *</label>
+          <input type="file" id="book-pdf" name="pdf"
+                 accept=".pdf,application/pdf" required>
+          <small>PDF upload limit: 50 MB.</small>
+        </div>
+
+        <div>
+          <label for="book-isbn">ISBN</label>
+          <input type="text" id="book-isbn" name="isbn">
+        </div>
+
+        <div>
+          <label for="book-publisher">Publisher</label>
+          <input type="text" id="book-publisher" name="publisher">
+        </div>
+
+        <div>
+          <label for="book-date">Published Date</label>
+          <input type="date" id="book-date" name="publishedDate">
+        </div>
+
+        <div>
+          <label for="book-pages">Number of Pages</label>
+          <input type="number" id="book-pages" name="pages" min="0">
+        </div>
+
+        <div>
+          <label for="book-price">Price</label>
+          <input type="number" id="book-price" name="price"
+                 min="0" step="0.01" value="0">
+        </div>
+
+        <div>
+          <label for="book-status">Publishing Status</label>
+          <select id="book-status" name="status">
+            <option value="draft">Save as Draft</option>
+            <option value="published">Publish Now</option>
+          </select>
+        </div>
+
+        <div class="full-width">
+          <label for="book-toc">Table of Contents</label>
+          <textarea id="book-toc" name="tableOfContents"
+                    rows="4"
+                    placeholder="One chapter per line"></textarea>
+        </div>
+
+        <div class="full-width">
+          <label for="book-learn">What Readers Will Learn</label>
+          <textarea id="book-learn" name="whatReadersLearn"
+                    rows="4"
+                    placeholder="One point per line"></textarea>
+        </div>
+
+        <div class="full-width">
+          <label for="book-author-intro">About the Author</label>
+          <textarea id="book-author-intro" name="authorIntro"
+                    rows="4"></textarea>
+        </div>
+
+        <div class="full-width">
+          <button class="btn" type="submit">Upload Book</button>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- Book Management -->
+
+    <section class="admin-section" id="book-management">
+      <h2>Book Management (<%= stats.books %>)</h2>
 
       <% if (!books.length) { %>
         <p class="empty">No books available yet.</p>
       <% } else { %>
-        <div class="admin-table-wrapper">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Language</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% books.forEach(b => { %>
-                <tr>
-                  <td><%= b.title %></td>
-                  <td><%= b.language %></td>
-                  <td><%= b.status %></td>
-                  <td>
-                    <a class="btn btn-sm"
-                       href="/books/<%= b.slug %>"
-                       target="_blank">View</a>
-                  </td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
+
+        <% books.forEach(b => { %>
+          <div class="book-edit">
+
+            <div class="admin-header">
+              <div>
+                <strong><%= b.title %></strong>
+                <div class="admin-help">
+                  <%= b.author || 'Unknown Author' %> |
+                  <%= b.language %> |
+                  <span class="admin-status status-<%= b.status %>">
+                    <%= b.status %>
+                  </span>
+                </div>
+              </div>
+
+              <div class="book-file-links">
+                <% if (b.status === 'published') { %>
+                  <a class="btn btn-sm"
+                     href="/books/<%= b.slug %>"
+                     target="_blank">View Public Page</a>
+                <% } %>
+
+                <% if (b.coverUrl) { %>
+                  <a class="btn btn-sm"
+                     href="/admin/books/<%= b._id %>/file/cover"
+                     target="_blank">View Cover</a>
+                <% } %>
+
+                <% if (b.pdfPath || b.pdfUrl) { %>
+                  <a class="btn btn-sm"
+                     href="/admin/books/<%= b._id %>/file/pdf"
+                     target="_blank">Preview PDF</a>
+                <% } %>
+              </div>
+            </div>
+
+            <details>
+              <summary>Edit Book Details</summary>
+
+              <form method="POST"
+                    action="/admin/books/<%= b._id %>/edit"
+                    enctype="multipart/form-data"
+                    class="admin-form">
+
+                <div>
+                  <label>Book Title *</label>
+                  <input type="text" name="title"
+                         value="<%= b.title %>" required>
+                </div>
+
+                <div>
+                  <label>Subtitle</label>
+                  <input type="text" name="subtitle"
+                         value="<%= b.subtitle || '' %>">
+                </div>
+
+                <div>
+                  <label>Author</label>
+                  <input type="text" name="author"
+                         value="<%= b.author || '' %>">
+                </div>
+
+                <div>
+                  <label>Language *</label>
+                  <select name="language" required>
+                    <% ['Hindi', 'Urdu', 'English', 'Bhojpuri'].forEach(language => { %>
+                      <option value="<%= language %>"
+                        <%= b.language === language ? 'selected' : '' %>>
+                        <%= language %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+
+                <div class="full-width">
+                  <label>Description</label>
+                  <textarea name="description" rows="4"><%= b.description || '' %></textarea>
+                </div>
+
+                <div>
+                  <label>Categories *</label>
+                  <select name="categories" multiple required>
+                    <% [
+                      'Life Experiences',
+                      'Self Improvement',
+                      'Relationships',
+                      'Life Lessons',
+                      'Personal Experiences',
+                      'Poetry',
+                      'Shayari',
+                      'Ghazal',
+                      'Nazm',
+                      'Kahani',
+                      'Bhojpuri Songs',
+                      'Fiction',
+                      'Non-Fiction',
+                      'Memoir'
+                    ].forEach(category => { %>
+                      <option value="<%= category %>"
+                        <%= (b.categories || []).includes(category) ? 'selected' : '' %>>
+                        <%= category %>
+                      </option>
+                    <% }) %>
+                  </select>
+                  <small>Use Ctrl to select multiple categories.</small>
+                </div>
+
+                <div>
+                  <label>Replace Cover Image</label>
+                  <input type="file" name="cover"
+                         accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                </div>
+
+                <div class="full-width">
+                  <label>Replace Book PDF</label>
+                  <input type="file" name="pdf"
+                         accept=".pdf,application/pdf">
+                  <small>Leave empty to keep the existing PDF.</small>
+                </div>
+
+                <div>
+                  <label>ISBN</label>
+                  <input type="text" name="isbn"
+                         value="<%= b.isbn || '' %>">
+                </div>
+
+                <div>
+                  <label>Publisher</label>
+                  <input type="text" name="publisher"
+                         value="<%= b.publisher || '' %>">
+                </div>
+
+                <div>
+                  <label>Published Date</label>
+                  <input type="date" name="publishedDate"
+                         value="<%= b.publishedDate
+                           ? new Date(b.publishedDate).toISOString().slice(0, 10)
+                           : '' %>">
+                </div>
+
+                <div>
+                  <label>Pages</label>
+                  <input type="number" name="pages"
+                         min="0" value="<%= b.pages || 0 %>">
+                </div>
+
+                <div>
+                  <label>Price</label>
+                  <input type="number" name="price"
+                         min="0" step="0.01" value="<%= b.price || 0 %>">
+                </div>
+
+                <div>
+                  <label>Status</label>
+                  <select name="status">
+                    <option value="draft"
+                      <%= b.status === 'draft' ? 'selected' : '' %>>
+                      Draft
+                    </option>
+                    <option value="published"
+                      <%= b.status === 'published' ? 'selected' : '' %>>
+                      Published
+                    </option>
+                  </select>
+                </div>
+
+                <div class="full-width">
+                  <label>Table of Contents</label>
+                  <textarea name="tableOfContents" rows="4"><%=
+                    Array.isArray(b.tableOfContents)
+                      ? b.tableOfContents.join('\n')
+                      : ''
+                  %></textarea>
+                </div>
+
+                <div class="full-width">
+                  <label>What Readers Will Learn</label>
+                  <textarea name="whatReadersLearn" rows="4"><%=
+                    Array.isArray(b.whatReadersLearn)
+                      ? b.whatReadersLearn.join('\n')
+                      : ''
+                  %></textarea>
+                </div>
+
+                <div class="full-width">
+                  <label>About the Author</label>
+                  <textarea name="authorIntro" rows="4"><%= b.authorIntro || '' %></textarea>
+                </div>
+
+                <div class="full-width">
+                  <button class="btn" type="submit">Save Book Changes</button>
+                </div>
+
+              </form>
+            </details>
+
+            <hr class="admin-divider">
+
+            <div class="admin-actions">
+
+              <% if (b.status === 'published') { %>
+                <form method="POST"
+                      action="/admin/books/<%= b._id %>/status">
+                  <input type="hidden" name="status" value="draft">
+                  <button class="btn btn-sm" type="submit">Unpublish</button>
+                </form>
+              <% } else { %>
+                <form method="POST"
+                      action="/admin/books/<%= b._id %>/status">
+                  <input type="hidden" name="status" value="published">
+                  <button class="btn btn-sm" type="submit">Publish</button>
+                </form>
+              <% } %>
+
+              <form method="POST"
+                    action="/admin/books/<%= b._id %>/delete"
+                    data-confirm="Delete this book and its uploaded files permanently?">
+                <button class="btn btn-sm" type="submit">Delete Book</button>
+              </form>
+
+            </div>
+
+          </div>
+        <% }) %>
+
+      <% } %>
+
+      <% if (bookPagination && bookPagination.totalPages > 1) { %>
+        <nav class="admin-pagination" aria-label="Book management pages">
+          <% if (bookPagination.page > 1) { %>
+            <a href="/admin?bookPage=<%= bookPagination.page - 1 %>#book-management">Previous</a>
+          <% } %>
+
+          <span>
+            Page <%= bookPagination.page %> of <%= bookPagination.totalPages %>
+            (Total: <%= bookPagination.total %> books)
+          </span>
+
+          <% if (bookPagination.page < bookPagination.totalPages) { %>
+            <a href="/admin?bookPage=<%= bookPagination.page + 1 %>#book-management">Next</a>
+          <% } %>
+        </nav>
       <% } %>
     </section>
 
     <!-- Contact Messages -->
-    <section class="admin-section">
+
+    <section class="admin-section" id="contact-management">
       <h2>Recent Contact Messages (<%= stats.contacts %>)</h2>
 
       <% if (!contacts.length) { %>
         <p class="empty">No messages yet.</p>
       <% } else { %>
+
         <div class="admin-table-wrapper">
           <table class="admin-table">
             <thead>
@@ -466,7 +739,6 @@
                     <span class="admin-status">
                       <%= c.isRead ? 'Read' : 'New' %>
                     </span>
-                    <br>
                     <span class="admin-status">
                       <%= c.replied ? 'Replied' : 'Not Replied' %>
                     </span>
@@ -474,31 +746,29 @@
 
                   <td>
                     <div class="admin-actions">
+
+                      <a class="btn btn-sm" href="/admin/contacts/<%= c.messageId %>">View</a>
+
                       <% if (!c.isRead) { %>
                         <form method="POST"
                               action="/admin/contacts/<%= c.messageId %>/read">
-                          <button class="btn btn-sm" type="submit">
-                            Mark Read
-                          </button>
+                          <button class="btn btn-sm" type="submit">Mark Read</button>
                         </form>
                       <% } %>
 
                       <% if (!c.replied) { %>
                         <form method="POST"
                               action="/admin/contacts/<%= c.messageId %>/replied">
-                          <button class="btn btn-sm" type="submit">
-                            Mark Replied
-                          </button>
+                          <button class="btn btn-sm" type="submit">Mark Replied</button>
                         </form>
                       <% } %>
 
                       <form method="POST"
                             action="/admin/contacts/<%= c.messageId %>/delete"
-                            onsubmit="return confirm('Delete this message?');">
-                        <button class="btn btn-sm" type="submit">
-                          Delete
-                        </button>
+                            data-confirm="Delete this message?">
+                        <button class="btn btn-sm" type="submit">Delete</button>
                       </form>
+
                     </div>
                   </td>
                 </tr>
@@ -506,8 +776,10 @@
             </tbody>
           </table>
         </div>
+
       <% } %>
     </section>
+
   <% } %>
 </div>
 

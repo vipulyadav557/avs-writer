@@ -1,38 +1,47 @@
 
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 
 const router = express.Router();
 
 const User = require('../models/User');
 const { pool } = require('../config/database');
-const { profileUploadDirectory } = require('../config/profileUpload');
+const { supabase } = require('../config/supabase');
 
-// Secure public profile photo
-router.get('/photo/:filename', (req, res, next) => {
+// Profile photo from private Supabase Storage
+router.get('/photo/:filename', async (req, res, next) => {
     try {
         const filename = req.params.filename;
 
-        if (
-            path.basename(filename) !== filename ||
-            !/^[a-f0-9-]+\.(jpg|jpeg|png|webp)$/i.test(filename)
-        ) {
+        if (!/^[a-f0-9-]+\.(jpg|jpeg|png|webp)$/i.test(filename)) {
             return res.status(404).end();
         }
 
-        const filePath = path.join(profileUploadDirectory, filename);
+        const { data, error } = await supabase.storage
+            .from('profiles')
+            .download(filename);
 
-        if (!fs.existsSync(filePath)) {
+        if (error || !data) {
             return res.status(404).end();
         }
 
+        const extension = filename.split('.').pop().toLowerCase();
+
+        const mimeTypes = {
+            jpg: 'image/jpeg',
+            jpeg: 'image/jpeg',
+            png: 'image/png',
+            webp: 'image/webp'
+        };
+
+        const buffer = Buffer.from(await data.arrayBuffer());
+
+        res.setHeader('Content-Type', mimeTypes[extension]);
+        res.setHeader('Content-Length', buffer.length);
         res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.sendFile(filePath, error => {
-            if (error && !res.headersSent) {
-                next(error);
-            }
-        });
+        res.setHeader('Cache-Control', 'private, max-age=3600');
+
+        return res.send(buffer);
+
     } catch (error) {
         next(error);
     }
@@ -72,6 +81,7 @@ router.get('/:slug', async (req, res, next) => {
             author,
             poems: result.rows
         });
+
     } catch (error) {
         next(error);
     }

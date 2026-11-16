@@ -395,30 +395,66 @@ async function findHomepage() {
 
 // Mark or unmark a published poem as featured
 async function setFeatured(id, featured) {
-  if (featured) {
-    const countResult = await pool.query(
-      `SELECT COUNT(*)
-       FROM poems
-       WHERE status = 'published'
-         AND is_featured = TRUE`
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Serialize all featured-poem changes.
+    await client.query(
+      'SELECT pg_advisory_xact_lock($1, $2)',
+      [20261116, 13]
     );
 
-    if (Number(countResult.rows[0].count) >= 3) {
-      throw new Error('Maximum 3 featured poems are allowed.');
+    // Confirm the poem exists and is published.
+    const poemResult = await client.query(
+      `SELECT poem_id
+       FROM poems
+       WHERE poem_id = $1
+         AND status = 'published'
+       FOR UPDATE`,
+      [id]
+    );
+
+    if (poemResult.rows.length === 0) {
+      await client.query('COMMIT');
+      return null;
     }
+
+    if (featured) {
+      const countResult = await client.query(
+        `SELECT COUNT(*)
+         FROM poems
+         WHERE status = 'published'
+           AND is_featured = TRUE
+           AND poem_id <> $1`,
+        [id]
+      );
+
+      if (Number(countResult.rows[0].count) >= 3) {
+        throw new Error('Maximum 3 featured poems are allowed.');
+      }
+    }
+
+    const result = await client.query(
+      `UPDATE poems
+       SET is_featured = $1,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE poem_id = $2
+         AND status = 'published'
+       RETURNING ${poemFields}`,
+      [featured, id]
+    );
+
+    await client.query('COMMIT');
+
+    return result.rows[0] || null;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-
-  const result = await pool.query(
-    `UPDATE poems
-     SET is_featured = $1,
-         updated_at = CURRENT_TIMESTAMP
-     WHERE poem_id = $2
-       AND status = 'published'
-     RETURNING ${poemFields}`,
-    [featured, id]
-  );
-
-  return result.rows[0] || null;
 }
 module.exports = {
   findPublished,

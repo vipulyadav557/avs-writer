@@ -1,34 +1,79 @@
 
 const express = require('express');
+const { body, validationResult } = require('express-validator');
+const { rateLimit } = require('express-rate-limit');
+
+const User = require('../models/User');
+const { clearSessionCookie } = require('../middleware/auth');
+
 const router = express.Router();
 
-const { body, validationResult } = require('express-validator');
-const User = require('../models/User');
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many login attempts. Please try again after 15 minutes.'
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many registration attempts. Please try again later.'
+});
 
 const loginRules = [
-  body('email').trim().isEmail().normalizeEmail(),
-  body('password').notEmpty()
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Please enter a valid email address.')
+    .normalizeEmail(),
+
+  body('password')
+    .isString()
+    .notEmpty()
+    .withMessage('Password is required.')
 ];
 
 const registerRules = [
-  body('name').trim().notEmpty().isLength({ max: 100 }),
-  body('email').trim().isEmail().normalizeEmail(),
-  body('password').isLength({ min: 8, max: 72 }),
-  body('confirmPassword').custom((value, { req }) => {
-    if (value !== req.body.password) {
-      throw new Error('Passwords do not match');
-    }
-    return true;
-  })
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Name is required.')
+    .isLength({ max: 100 })
+    .withMessage('Name cannot exceed 100 characters.'),
+
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Please enter a valid email address.')
+    .normalizeEmail(),
+
+  body('password')
+    .isString()
+    .isLength({ min: 8, max: 72 })
+    .withMessage('Password must be between 8 and 72 characters.'),
+
+  body('confirmPassword')
+    .custom((value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error('Passwords do not match.');
+      }
+
+      return true;
+    })
 ];
 
-// Only allow safe local redirects
+// Only allow safe local redirects.
 function getSafeRedirect(value) {
   if (
     typeof value !== 'string' ||
     !value.startsWith('/') ||
     value.startsWith('//') ||
-    value.includes('\\')
+    value.includes('\\') ||
+    /[\r\n]/.test(value)
   ) {
     return null;
   }
@@ -46,15 +91,25 @@ function getSafeRedirect(value) {
   }
 }
 
+function renderLogin(res, errors = [], redirectTo = '') {
+  return res.status(400).render('pages/login', {
+    title: 'Sign In',
+    errors,
+    redirectTo
+  });
+}
+
 // Login Page
 router.get('/login', (req, res) => {
   if (req.session && req.session.userId) {
+    const role = req.session.user && req.session.user.role;
+
     return res.redirect(
-      req.session.user.role === 'admin' ? '/admin' : '/writer'
+      role === 'admin' ? '/admin' : '/writer'
     );
   }
 
-  res.render('pages/login', {
+  return res.render('pages/login', {
     title: 'Sign In',
     errors: [],
     redirectTo: getSafeRedirect(req.query.next) || ''
@@ -63,159 +118,185 @@ router.get('/login', (req, res) => {
 
 // Registration Page
 router.get('/register', (req, res) => {
-  res.render('pages/register', {
+  if (req.session && req.session.userId) {
+    return res.redirect(
+      req.session.user?.role === 'admin' ? '/admin' : '/writer'
+    );
+  }
+
+  return res.render('pages/register', {
     title: 'Create Account',
     errors: []
   });
 });
 
 // Register New Writer
-router.post('/register', registerRules, async (req, res) => {
-  const errors = validationResult(req);
+router.post(
+  '/register',
+  registerLimiter,
+  registerRules,
+  async (req, res) => {
+    const validation = validationResult(req);
 
-  if (!errors.isEmpty()) {
-    return res.status(400).render('pages/register', {
-      title: 'Create Account',
-      errors: errors.array()
-    });
-  }
-
-  const { name, email, password } = req.body;
-
-  try {
-    const existingUser = await User.findByEmail(email);
-
-    if (existingUser) {
-      return res.status(409).render('pages/register', {
+    if (!validation.isEmpty()) {
+      return res.status(400).render('pages/register', {
         title: 'Create Account',
-        errors: [{ msg: 'Email is already registered.' }]
+        errors: validation.array()
       });
     }
 
-    await User.createUser({
-      name,
-      email,
-      password,
-      role: 'writer'
-    });
+    const name = req.body.name.trim();
+    const email = req.body.email;
+    const password = req.body.password;
 
-    res.redirect('/auth/login');
+    try {
+      const existingUser = await User.findByEmail(email);
 
-  } catch (error) {
-    console.error('Registration error:', error);
+      if (existingUser) {
+        return res.status(409).render('pages/register', {
+          title: 'Create Account',
+          errors: [{ msg: 'Email is already registered.' }]
+        });
+      }
 
-    if (error.code === '23505') {
-      return res.status(409).render('pages/register', {
-        title: 'Create Account',
-        errors: [{ msg: 'Email is already registered.' }]
+      await User.createUser({
+        name,
+        email,
+        password,
+        role: 'writer'
+      });
+
+      return res.redirect('/auth/login');
+
+    } catch (error) {
+      console.error('REGISTRATION ERROR:', error.message);
+
+      if (error.code === '23505') {
+        return res.status(409).render('pages/register', {
+          title: 'Create Account',
+          errors: [{ msg: 'Email is already registered.' }]
+        });
+      }
+
+      return res.status(500).render('pages/500', {
+        title: 'Server Error'
       });
     }
-
-    res.status(500).render('pages/500', {
-      title: 'Server Error'
-    });
   }
-});
+);
 
 // Login
-router.post('/login', loginRules, async (req, res) => {
-  const errors = validationResult(req);
-  const redirectTo = getSafeRedirect(req.body.redirectTo);
+router.post(
+  '/login',
+  loginLimiter,
+  loginRules,
+  async (req, res) => {
+    const validation = validationResult(req);
+    const redirectTo = getSafeRedirect(req.body.redirectTo) || '';
 
-  if (!errors.isEmpty()) {
-    return res.status(400).render('pages/login', {
-      title: 'Sign In',
-      errors: errors.array(),
-      redirectTo: redirectTo || ''
-    });
-  }
-
-  const { email, password } = req.body;
-
-  try {
-    const user = await User.findByEmail(email);
-
-    if (
-      !user ||
-      !await User.verifyPassword(password, user.password_hash)
-    ) {
-      return res.status(400).render('pages/login', {
-        title: 'Sign In',
-        errors: [{ msg: 'Invalid email or password' }],
-        redirectTo: redirectTo || ''
-      });
+    if (!validation.isEmpty()) {
+      return renderLogin(
+        res,
+        validation.array(),
+        redirectTo
+      );
     }
 
-    if (!user.is_active) {
-      return res.status(403).render('pages/login', {
-        title: 'Sign In',
-        errors: [{ msg: 'Account is disabled' }],
-        redirectTo: redirectTo || ''
-      });
-    }
+    const email = req.body.email;
+    const password = req.body.password;
 
-    req.session.regenerate(async (err) => {
-      if (err) {
-        console.error(err);
+    try {
+      const user = await User.findByEmail(email);
 
-        return res.status(500).render('pages/500', {
-          title: 'Server Error'
+      if (
+        !user ||
+        !await User.verifyPassword(password, user.password_hash)
+      ) {
+        return renderLogin(
+          res,
+          [{ msg: 'Invalid email or password.' }],
+          redirectTo
+        );
+      }
+
+      if (!user.is_active) {
+        return res.status(403).render('pages/login', {
+          title: 'Sign In',
+          errors: [{ msg: 'Your account is disabled.' }],
+          redirectTo
         });
       }
 
-      req.session.userId = user.user_id;
+      req.session.regenerate(async (sessionError) => {
+        if (sessionError) {
+          console.error('SESSION REGENERATE ERROR:', sessionError);
 
-      req.session.user = {
-        id: user.user_id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      };
+          return res.status(500).render('pages/500', {
+            title: 'Server Error'
+          });
+        }
 
-      try {
-        await User.updateLastLogin(user.user_id);
+        req.session.userId = user.user_id;
 
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error(saveErr);
+        req.session.user = {
+          id: user.user_id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        };
 
-            return res.status(500).render('pages/500', {
-              title: 'Server Error'
-            });
-          }
+        try {
+          await User.updateLastLogin(user.user_id);
 
-          if (user.role === 'admin') {
-            return res.redirect('/admin');
-          }
+          req.session.save((saveError) => {
+            if (saveError) {
+              console.error('SESSION SAVE ERROR:', saveError);
 
-          return res.redirect(redirectTo || '/writer');
-        });
+              return res.status(500).render('pages/500', {
+                title: 'Server Error'
+              });
+            }
 
-      } catch (error) {
-        console.error('Login update error:', error);
+            if (user.role === 'admin') {
+              return res.redirect('/admin');
+            }
 
-        res.status(500).render('pages/500', {
-          title: 'Server Error'
-        });
-      }
-    });
+            return res.redirect(redirectTo || '/writer');
+          });
 
-  } catch (error) {
-    console.error('Login error:', error);
+        } catch (error) {
+          console.error('LOGIN UPDATE ERROR:', error);
 
-    res.status(500).render('pages/500', {
-      title: 'Server Error'
-    });
+          return res.status(500).render('pages/500', {
+            title: 'Server Error'
+          });
+        }
+      });
+
+    } catch (error) {
+      console.error('LOGIN ERROR:', error.message);
+
+      return res.status(500).render('pages/500', {
+        title: 'Server Error'
+      });
+    }
   }
-});
+);
 
-// Logout
-router.get('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) console.error(err);
+// Secure Logout - POST only (CSRF protected)
+router.post('/logout', (req, res) => {
+  if (!req.session) {
+    clearSessionCookie(res);
+    return res.redirect('/');
+  }
 
-    res.clearCookie('connect.sid');
-    res.redirect('/');
+  req.session.destroy((error) => {
+    if (error) {
+      console.error('LOGOUT ERROR:', error);
+    }
+
+    clearSessionCookie(res);
+    return res.redirect('/');
   });
 });
 

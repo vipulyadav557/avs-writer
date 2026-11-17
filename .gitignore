@@ -1,3 +1,4 @@
+
 node_modules/
 
 .env
@@ -17,6 +18,7 @@ err.txt
 out.txt
 
 *.backup
+*.backup-*
 *.bak
 *.old
 *.point18-backup

@@ -10,7 +10,9 @@
 
     <div class="admin-user">
       <span>Welcome, <%= user?.name || 'Admin' %></span>
-      <a class="btn btn-ghost btn-sm" href="/auth/logout">Logout</a>
+      <form action="/auth/logout" method="POST" class="logout-form">
+  <button class="btn btn-ghost btn-sm" type="submit">Logout</button>
+</form>
     </div>
   </div>
 

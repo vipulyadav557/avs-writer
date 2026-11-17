@@ -1532,10 +1532,12 @@
 
 /* Poetry Grid */
 
+/* Poetry Grid */
+
 .poem-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 340px));
-  justify-content: start;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-content: stretch;
   gap: 24px;
   margin: 30px 0;
 }

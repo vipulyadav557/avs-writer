@@ -3,31 +3,27 @@
 
 <%
 const homeCategories = [
-  { name: 'Shayari', description: 'Feelings expressed in beautiful words', icon: 'shayari' },
   { name: 'Ghazal', description: 'Explore the beauty of ghazals', icon: 'ghazal' },
   { name: 'Nazm', description: 'Thoughtful and meaningful poetry', icon: 'nazm' },
   { name: 'Kavita', description: 'Discover Hindi poems and expressions', icon: 'kavita' },
-  { name: 'Bhojpuri Song', description: 'Celebrate Bhojpuri creativity', icon: 'bhojpuri geet' },
   { name: 'Kahani', description: 'Stories that leave an impression', icon: 'kahani' }
 ];
 
 const homeLanguages = [
-  { name: 'Hindi', native: 'हिन्दी', description: 'Hindi writings and poetry' },
-  { name: 'Urdu', native: 'اردو', description: 'Urdu poetry and literature' },
+  { name: 'Hindi', native: 'à¤¹à¤¿à¤¨à¥à¤¦à¥€', description: 'Hindi writings and poetry' },
+  { name: 'Urdu', native: 'Ø§Ø±Ø¯Ùˆ', description: 'Urdu poetry and literature' },
   { name: 'English', native: 'English', description: 'Creative English writing' },
-  { name: 'Bhojpuri', native: 'भोजपुरी', description: 'Bhojpuri poems and stories' }
+  { name: 'Bhojpuri', native: 'à¤à¥‹à¤œà¤ªà¥à¤°à¥€', description: 'Bhojpuri poems and stories' }
 ];
 %>
-
-
 
 <section class="home-hero">
   <h1>AVS Writer</h1>
   <h4 class="hero-mantra">
     <span class="hero-word hero-word-one">Astitva</span>
-    <span class="hero-word hero-word-two"> • Vishwas</span>
-    <span class="hero-word hero-word-three"> • Sneh</span>
-    <span class="hero-hindi">अस्तित्व में विश्वास और विश्वास में प्रेम।</span>
+    <span class="hero-word hero-word-two"> â€¢ Vishwas</span>
+    <span class="hero-word hero-word-three"> â€¢ Sneh</span>
+    <span class="hero-hindi">à¤…à¤¸à¥à¤¤à¤¿à¤¤à¥à¤µ à¤®à¥‡à¤‚ à¤µà¤¿à¤¶à¥à¤µà¤¾à¤¸ à¤”à¤° à¤µà¤¿à¤¶à¥à¤µà¤¾à¤¸ à¤®à¥‡à¤‚ à¤ªà¥à¤°à¥‡à¤®à¥¤</span>
   </h4>
   <p>
     A beautiful home for poetry, shayari, ghazals and stories.
@@ -60,11 +56,11 @@ const homeLanguages = [
         <p><%= poem.body.substring(0, 150) %><%= poem.body.length > 150 ? '...' : '' %></p>
 
         <div class="home-poem-meta">
-          By <%= poem.author %> · <%= poem.category %>
+          By <%= poem.author %> Â· <%= poem.category %>
         </div>
 
         <a class="home-read-more" href="/poems/<%= encodeURIComponent(poem.slug) %>">
-          Read More →
+          Read More â†’
         </a>
       </article>
     <% }) %>
@@ -89,11 +85,12 @@ const homeLanguages = [
          href="/poems?category=<%= encodeURIComponent(category.name) %>">
 
         <img
-  class="explore-category-icon"
- src="/images/<%= category.icon %>.jpeg"
-  alt="<%= category.name %> icon"
-  loading="lazy"
->
+          class="explore-category-icon"
+          src="/images/<%= category.icon %>.jpeg"
+          alt="<%= category.name %> icon"
+          loading="lazy"
+        >
+
         <h3><%= category.name %></h3>
         <p><%= category.description %></p>
       </a>
@@ -142,11 +139,11 @@ const homeLanguages = [
         <p><%= poem.body.substring(0, 150) %><%= poem.body.length > 150 ? '...' : '' %></p>
 
         <div class="home-poem-meta">
-          By <%= poem.author %> · <%= poem.category %>
+          By <%= poem.author %> Â· <%= poem.category %>
         </div>
 
         <a class="home-read-more" href="/poems/<%= encodeURIComponent(poem.slug) %>">
-          Read More →
+          Read More â†’
         </a>
       </article>
     <% }) %>

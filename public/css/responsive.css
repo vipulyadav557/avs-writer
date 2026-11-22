@@ -1,8 +1,21 @@
-@media (max-width: 768px) {
-  .nav { display: flex; flex-wrap: wrap; }
-  .nav a { margin: .25rem .5rem 0 0; }
-  .hero h1 { font-size: 1.8rem; }
+/* Responsive */
+
+@media (max-width: 800px) {
+  .poem-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
-@media (max-width: 480px) {
-  .container { padding: 0 .75rem; }
+
+@media (max-width: 600px) {
+  .poem-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .poetry-hero .banner-img {
+    height: 190px;
+  }
 }

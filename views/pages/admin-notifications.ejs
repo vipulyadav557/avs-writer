@@ -1,0 +1,135 @@
+
+<%- include('../partials/header') %>
+
+<section class="admin-section notifications-page">
+
+    <div class="admin-header">
+        <div>
+            <h1><i class="fa-solid fa-bell"></i> Notifications</h1>
+            <p>Manage all your website notifications in one place.</p>
+        </div>
+
+        <a href="/admin" class="btn btn-ghost">
+            <i class="fa-solid fa-arrow-left"></i> Admin Dashboard
+        </a>
+    </div>
+
+    <div class="notification-toolbar">
+        <div>
+            <strong>Total: <%= notifications.length %></strong>
+            <span class="admin-status">
+                <%= unreadCount %> unread
+            </span>
+        </div>
+
+        <div class="notification-actions">
+            <% if (notifications.length > 0 && unreadCount > 0) { %>
+                <form action="/admin/notifications/read-all" method="POST">
+                    <button type="submit" class="btn btn-ghost">
+                        <i class="fa-solid fa-check-double"></i>
+                        Mark All as Read
+                    </button>
+                </form>
+            <% } %>
+
+            <% if (notifications.length > 0) { %>
+                <form action="/admin/notifications/delete-all" method="POST"
+                      onsubmit="return confirm('Delete ALL notifications? This cannot be undone.');">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fa-solid fa-trash"></i>
+                        Delete All
+                    </button>
+                </form>
+            <% } %>
+        </div>
+    </div>
+
+    <% if (notifications.length === 0) { %>
+
+        <div class="notification-empty">
+            <i class="fa-regular fa-bell-slash"></i>
+            <h2>No Notifications</h2>
+            <p>You are all caught up. New notifications will appear here.</p>
+        </div>
+
+    <% } else { %>
+
+        <div class="admin-table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Notification</th>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <% notifications.forEach(notification => { %>
+                        <tr class="<%= notification.is_read ? '' : 'notification-unread' %>">
+
+                            <td>
+                                <% if (notification.is_read) { %>
+                                    <span class="admin-status">Read</span>
+                                <% } else { %>
+                                    <span class="notification-unread-badge">Unread</span>
+                                <% } %>
+                            </td>
+
+                            <td class="notification-content">
+                                <strong><%= notification.title %></strong>
+                                <p class="notification-message"><%= notification.message %></p>
+                            </td>
+
+                            <td>
+                                <%= notification.event_type %>
+                            </td>
+
+                            <td>
+                                <%= new Date(notification.created_at).toLocaleString('en-IN') %>
+                            </td>
+
+                            <td>
+                                <div class="notification-actions">
+
+                                    <a href="<%= notification.target_url || '/admin' %>"
+                                       class="btn btn-sm btn-ghost">
+                                        <i class="fa-solid fa-eye"></i> View
+                                    </a>
+
+                                    <% if (!notification.is_read) { %>
+                                        <form action="/admin/notifications/<%= notification.notification_id %>/read"
+                                              method="POST">
+                                            <button type="submit" class="btn btn-sm btn-ghost">
+                                                <i class="fa-solid fa-check"></i> Read
+                                            </button>
+                                        </form>
+                                    <% } %>
+
+                                    <form action="/admin/notifications/<%= notification.notification_id %>/delete"
+                                          method="POST"
+                                          onsubmit="return confirm('Delete this notification?');">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fa-solid fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+
+        <p class="notification-limit-note">
+            Showing the latest <%= notifications.length %> notifications (maximum 100).
+        </p>
+
+    <% } %>
+
+</section>
+
+<%- include('../partials/footer') %>

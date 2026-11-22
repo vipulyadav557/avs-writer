@@ -1,4 +1,3 @@
-
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
@@ -12,6 +11,7 @@ const User = require('../models/User');
 const { uploadProfilePhoto } = require('../config/profileUpload');
 const { supabase } = require('../config/supabase');
 const { uploadPoemFiles } = require('../config/poemUpload');
+const { notifyAdmin } = require('../services/adminNotificationService');
 
 const POEM_BUCKET = 'poems';
 const PROFILE_BUCKET = 'profiles';
@@ -531,6 +531,25 @@ router.post('/new', (req, res, next) => {
         documentMimeType: uploaded.pdf ? uploaded.pdf.mimeType : null,
         documentSize: uploaded.pdf ? uploaded.pdf.size : null
       });
+
+      // Notify admin only when a poem is submitted for approval.
+      if (status === 'pending') {
+        void notifyAdmin({
+          eventType: 'poem_submitted',
+          title: 'New Poem Submitted for Approval',
+          message: `${req.session.user.name} submitted "${req.body.title.trim()}" for approval.`,
+          targetUrl: '/admin',
+          metadata: {
+            userId: getUserId(req),
+            writerName: req.session.user.name,
+            poemTitle: req.body.title.trim(),
+            category: req.body.category,
+            language: req.body.language
+          }
+        }).catch(notificationError => {
+          console.error('POEM SUBMISSION NOTIFICATION ERROR:', notificationError);
+        });
+      }
 
       uploaded = { image: null, pdf: null };
 

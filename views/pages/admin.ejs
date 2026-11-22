@@ -24,7 +24,140 @@
 
   <% } else { %>
 
+    <!-- Admin Notifications -->
+
+    <section class="admin-section" id="admin-notifications">
+
+      <div class="admin-header">
+        <div>
+          <h2>
+            <i class="fa-solid fa-bell" aria-hidden="true"></i>
+            Admin Notifications
+          </h2>
+
+          <p class="admin-help">
+            Recent activity and important updates from AVS Writer.
+          </p>
+        </div>
+
+        <% if ((locals.adminUnreadCount || 0) > 0) { %>
+          <span class="admin-status status-pending">
+            <%= adminUnreadCount %> Unread
+          </span>
+        <% } else { %>
+          <span class="admin-status">
+            All Caught Up
+          </span>
+        <% } %>
+      </div>
+
+      <% if (locals.adminUnreadCount > 0) { %>
+        <form method="POST"
+              action="/admin/notifications/read-all"
+              class="admin-actions">
+          <button class="btn btn-sm" type="submit">
+            <i class="fa-solid fa-check-double" aria-hidden="true"></i>
+            Mark All as Read
+          </button>
+        </form>
+      <% } %>
+
+      <% if (!locals.adminNotifications || adminNotifications.length === 0) { %>
+
+        <p class="empty">
+          <i class="fa-regular fa-bell-slash" aria-hidden="true"></i>
+          No notifications available yet.
+        </p>
+
+      <% } else { %>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Notification</th>
+                <th>Event Type</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <% adminNotifications.forEach(notification => { %>
+
+                <tr>
+                  <td>
+                    <strong>
+                      <%= notification.title %>
+                    </strong>
+
+                    <p class="admin-help">
+                      <%= notification.message %>
+                    </p>
+                  </td>
+
+                  <td>
+                    <span class="admin-status">
+                      <%= notification.event_type
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, char => char.toUpperCase()) %>
+                    </span>
+                  </td>
+
+                  <td>
+                    <%= notification.created_at
+                      ? new Date(notification.created_at).toLocaleString()
+                      : '-' %>
+                  </td>
+
+                  <td>
+                    <% if (notification.is_read) { %>
+                      <span class="admin-status">
+                        Read
+                      </span>
+                    <% } else { %>
+                      <span class="admin-status status-pending">
+                        Unread
+                      </span>
+                    <% } %>
+                  </td>
+
+                  <td>
+                    <div class="admin-actions">
+
+                      <a class="btn btn-sm"
+                         href="<%= notification.target_url || '/admin' %>">
+                        View
+                      </a>
+
+                      <% if (!notification.is_read) { %>
+                        <form method="POST"
+                              action="/admin/notifications/<%= notification.notification_id %>/read">
+
+                          <button class="btn btn-sm" type="submit">
+                            Mark Read
+                          </button>
+
+                        </form>
+                      <% } %>
+
+                    </div>
+                  </td>
+                </tr>
+
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+      <% } %>
+
+    </section>
+
     <!-- Dashboard Statistics -->
+
+  
 
     <div class="admin-stats">
       <div class="stat-card">

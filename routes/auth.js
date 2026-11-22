@@ -5,6 +5,7 @@ const { rateLimit } = require('express-rate-limit');
 
 const User = require('../models/User');
 const { clearSessionCookie } = require('../middleware/auth');
+const { notifyAdmin } = require('../services/adminNotificationService');
 
 const router = express.Router();
 
@@ -166,6 +167,20 @@ router.post(
         role: 'writer'
       });
 
+      // Admin notification: New writer registration
+      void notifyAdmin({
+        eventType: 'writer_registered',
+        title: 'New Writer Registered',
+        message: `${name} (${email}) has registered as a new writer.`,
+        targetUrl: '/admin/users',
+        metadata: {
+          name,
+          email
+        }
+      }).catch(error => {
+        console.error('WRITER REGISTRATION NOTIFICATION ERROR:', error);
+      });
+
       return res.redirect('/auth/login');
 
     } catch (error) {
@@ -254,6 +269,23 @@ router.post(
 
               return res.status(500).render('pages/500', {
                 title: 'Server Error'
+              });
+            }
+
+            // Notify admin only when a writer logs in successfully.
+            if (user.role !== 'admin') {
+              void notifyAdmin({
+                eventType: 'writer_login',
+                title: 'Writer Login',
+                message: `${user.name} (${user.email}) logged in successfully.`,
+                targetUrl: '/admin/users',
+                metadata: {
+                  userId: user.user_id,
+                  name: user.name,
+                  email: user.email
+                }
+              }).catch(error => {
+                console.error('WRITER LOGIN NOTIFICATION ERROR:', error);
               });
             }
 

@@ -2137,3 +2137,140 @@ overflow: hidden;
 #preview.preview-align-left {
   text-align: left;
 }
+
+/* ================================
+   ADMIN NOTIFICATIONS
+================================ */
+
+.nav-notifications {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.notification-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #c0392b;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.notifications-page {
+    margin-top: 30px;
+    margin-bottom: 50px;
+}
+
+.notification-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin: 22px 0;
+}
+
+.notification-toolbar > div:first-child {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.notification-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.notification-actions form {
+    margin: 0;
+}
+
+.notification-content {
+    min-width: 220px;
+}
+
+.notification-content strong {
+    display: block;
+    margin-bottom: 7px;
+}
+
+.notification-message {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.notification-unread {
+    background: rgba(201, 169, 110, 0.07);
+}
+
+.notification-unread-badge {
+    display: inline-block;
+    padding: 4px 9px;
+    border-radius: 20px;
+    background: rgba(192, 57, 43, 0.15);
+    color: #e57373;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.notification-empty {
+    text-align: center;
+    padding: 65px 20px;
+    border: 1px solid rgba(201, 169, 110, 0.2);
+    border-radius: 12px;
+    background: var(--surface);
+}
+
+.notification-empty > i {
+    font-size: 42px;
+    color: var(--muted);
+    margin-bottom: 15px;
+}
+
+.notification-empty h2 {
+    margin-bottom: 8px;
+}
+
+.notification-empty p,
+.notification-limit-note {
+    color: var(--muted);
+}
+
+.notification-limit-note {
+    margin-top: 15px;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .notification-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .notification-actions {
+        width: 100%;
+    }
+
+    .notifications-page .admin-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .notifications-page .admin-table {
+        min-width: 850px;
+    }
+}

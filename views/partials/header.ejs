@@ -45,6 +45,16 @@
       <% } %>
 
       <% if (locals.currentUser && currentUser.role === 'admin') { %>
+        <a href="/admin/notifications" class="nav-notifications">
+          <i class="fa-solid fa-bell"></i> Notifications
+
+          <% if ((locals.adminUnreadCount || 0) > 0) { %>
+            <span class="notification-badge">
+              <%= adminUnreadCount %>
+            </span>
+          <% } %>
+        </a>
+
         <a href="/admin">Admin Dashboard</a>
       <% } %>
 

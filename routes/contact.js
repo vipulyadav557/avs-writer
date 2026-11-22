@@ -1,9 +1,11 @@
-﻿const express = require('express');
+﻿
+const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const { isConnected } = require('../config/database');
 const Contact = require('../models/Contact');
+const { notifyAdmin } = require('../services/adminNotificationService');
 
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -73,6 +75,20 @@ router.post('/', contactLimiter, contactRules, async (req, res) => {
       message,
       ip: req.ip || '',
       userAgent: req.headers['user-agent'] || ''
+    });
+
+    void notifyAdmin({
+      eventType: 'contact_message',
+      title: 'New Contact Message',
+      message: `A new contact message was received from ${name} (${email}). Subject: ${subject || 'No subject'}.`,
+      targetUrl: '/admin',
+      metadata: {
+        name,
+        email,
+        subject: subject || ''
+      }
+    }).catch(error => {
+      console.error('Contact notification error:', error);
     });
 
     return res.render('pages/contact', {

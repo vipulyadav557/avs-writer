@@ -1,4 +1,4 @@
-
+﻿
 require('dotenv').config();
 
 const express = require('express');
@@ -123,6 +123,24 @@ const { currentUser } = require('./middleware/auth');
 
 app.use(currentUser);
 
+// Load unread notification count for the admin navbar.
+app.use(async (req, res, next) => {
+  if (res.locals.currentUser?.role === 'admin') {
+    try {
+      const AdminNotification = require('./models/AdminNotification');
+
+      res.locals.adminUnreadCount =
+        await AdminNotification.getUnreadCount();
+
+    } catch (error) {
+      console.error('ADMIN UNREAD COUNT LOAD ERROR:', error);
+      res.locals.adminUnreadCount = 0;
+    }
+  }
+
+  next();
+});
+
 const site = require('./config/site');
 
 const poemRoutes = require('./routes/poems');
@@ -131,6 +149,7 @@ const contactRoutes = require('./routes/contact');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const adminUsersRoutes = require('./routes/admin-users');
+const adminNotificationRoutes = require('./routes/admin-notifications');
 const writerRoutes = require('./routes/writer');
 const authorRoutes = require('./routes/authors');
 
@@ -170,8 +189,13 @@ app.use('/writer', writerRoutes);
 app.use('/contact', contactRoutes);
 app.use('/auth', authRoutes);
 
-// Admin user management must be registered before admin router.
+// Admin user management
 app.use('/admin/users', adminUsersRoutes);
+
+// Admin notifications must run before the main admin router.
+app.use('/admin', adminNotificationRoutes);
+
+// Existing admin routes
 app.use('/admin', adminRoutes);
 
 app.use('/author', authorRoutes);
@@ -246,3 +270,4 @@ async function startServer() {
 }
 
 startServer();
+
